@@ -2,17 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { prisma } from "../../../../lib/prisma";
+import { roleToRedirect } from "../../../../lib/auth-token";
 
 export const runtime = "nodejs";
 
 const invalidCredentials = () =>
   NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-
-function toRedirect(role: "USER" | "ADMIN" | "TECHNICIAN"): string {
-  if (role === "ADMIN") return "/admin/dashboard";
-  if (role === "TECHNICIAN") return "/admin/complaints";
-  return "/dashboard";
-}
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -105,7 +100,7 @@ export async function POST(req: NextRequest) {
           phone: challenge.users.phone,
           role: challenge.users.role,
         },
-        redirectTo: toRedirect(challenge.users.role),
+        redirectTo: roleToRedirect(challenge.users.role),
       },
       { status: 200 },
     );

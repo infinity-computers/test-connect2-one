@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
+import { roleToRedirect } from "../../../../lib/auth-token";
 
 export const runtime = "nodejs";
 
@@ -10,12 +11,6 @@ const invalidCredentials = () =>
 
 function normalizeEmail(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
-}
-
-function toRedirect(role: "USER" | "ADMIN" | "TECHNICIAN"): string {
-  if (role === "ADMIN") return "/admin/dashboard";
-  if (role === "TECHNICIAN") return "/admin/complaints";
-  return "/dashboard";
 }
 
 export async function POST(req: NextRequest) {
@@ -83,7 +78,7 @@ export async function POST(req: NextRequest) {
           phone: userFound.phone,
           role: userFound.role,
         },
-        redirectTo: toRedirect(userFound.role),
+        redirectTo: roleToRedirect(userFound.role),
       },
       { status: 200 },
     );
