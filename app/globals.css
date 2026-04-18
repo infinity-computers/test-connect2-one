@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #0b1220;
+  --surface-1: #111b2e;
+  --surface-2: #1a2740;
+  --text-primary: #eaf2ff;
+  --text-muted: #9bb0d1;
+  --border: #2b3f63;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --accent-soft: #0f2b52;
+  --accent-cyan: #22d3ee;
+}
+
+@layer base {
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+    letter-spacing: -0.015em;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@layer components {
+  .surface-card {
+    @apply bg-slate-900 border border-slate-800 rounded-2xl shadow-sm;
+  }
+
+  .btn-primary {
+    @apply bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl transition-colors;
+  }
+
+  .btn-secondary {
+    @apply border border-slate-700 text-slate-200 hover:border-blue-600 hover:text-blue-300 rounded-xl transition-colors;
+  }
+
+  .text-link {
+    @apply text-blue-300 hover:text-blue-200;
+  }
+
+  .input-dark {
+    @apply w-full border border-slate-700 bg-slate-900 text-slate-100 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 transition;
+  }
+
+  .heading-rhythm {
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+  }
+
+  .subheading-rhythm {
+    line-height: 1.2;
+    letter-spacing: -0.015em;
+  }
+
+  .copy-rhythm {
+    line-height: 1.65;
+  }
+}
