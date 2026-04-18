@@ -8,18 +8,26 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed": "prisma db execute --file prisma/seed.sql"
   },
   "dependencies": {
+    "@prisma/adapter-mariadb": "^7.7.0",
+    "@prisma/client": "^7.7.0",
     "@supabase/supabase-js": "^2.57.4",
+    "bcryptjs": "^3.0.3",
+    "jsonwebtoken": "^9.0.3",
     "lucide-react": "^0.344.0",
     "next": "^14.2.25",
+    "nodemailer": "^8.0.5",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.9.1",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20.17.57",
+    "@types/nodemailer": "^8.0.0",
     "@types/react": "^18.3.5",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.18",
