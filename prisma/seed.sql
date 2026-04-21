@@ -13,10 +13,11 @@ SET FOREIGN_KEY_CHECKS = 1;
 -- USERS
 INSERT INTO users (id, name, email, phone, password, role, auth_type)
 VALUES
-  ('usr_demo_001', 'Ravi Patel', 'user@connect2one.in', '9974955501', '$2b$12$hRkpvG8L0Tf6mWmYHkqf3Ox4mSMqIvPByf2Uj2Nq9GXlW3kQ2j6aG', 'USER', 'PASSWORD'),
-  ('usr_demo_002', 'Meera Shah', 'meera@connect2one.in', '9974955503', '$2b$12$Kj2rF0g4NG9zRZ3j4qQGLeQZyCmKeZQn8hW4k7Kf7Xk7jZrB3A62K', 'USER', 'PASSWORD'),
-  ('adm_demo_001', 'Admin User', 'admin@connect2one.in', '9974955599', NULL, 'ADMIN', 'OTP'),
-  ('tech_demo_001', 'Tech User', 'tech@connect2one.in', '9974955588', NULL, 'TECHNICIAN', 'OTP');
+  ('usr_001', 'Ravi Patel', 'ravi@connect2one.in', '9974955501', '$2b$10$nTf72SMu6il01MIUMXlcXOYl8cQ3oyXvRScrQ.rbMsMYEnO4UKc9i', 'USER', 'PASSWORD'),
+  ('usr_002', 'Meera Shah', 'meera@connect2one.in', '9974955503', '$2b$10$GdFgOjEIEjIlRNmBfo.rK.rfndsvL.tc97Obtbu6Dp6Y24RgZ8xAa', 'USER', 'PASSWORD'),
+  ('tech_001', 'Tech User', 'joffreylannister19@gmail.com', '9974955588', '$2b$10$fN9lPomUm.HaqqPbyEfJcOZZEWtA0jWokErzl7MZa9Dqounw/zFQO', 'TECHNICIAN', 'OTP'),
+  ('adm_001', 'Admin User', 'rathorjatin70@gmail.com', '9974955599', NULL, 'ADMIN', 'OTP'),
+  ('adm_002', 'Care Admin', 'care@connect2one.in', '9974955502', NULL, 'ADMIN', 'OTP');
 
 -- PLANS
 INSERT INTO plans (id, name, description)
@@ -70,23 +71,23 @@ VALUES
 -- SUBSCRIPTIONS
 INSERT INTO subscriptions (id, user_id, plan_variant_id, start_date, end_date, status)
 VALUES
-  ('sub_demo_001', 'usr_demo_001', 'pv_eco_60_3', DATE_SUB(CURDATE(), INTERVAL 20 DAY), DATE_ADD(CURDATE(), INTERVAL 70 DAY), 'active'),
-  ('sub_demo_002', 'usr_demo_002', 'pv_bud_80_6', DATE_SUB(CURDATE(), INTERVAL 300 DAY), DATE_SUB(CURDATE(), INTERVAL 120 DAY), 'expired');
+  ('sub_001', 'usr_001', 'pv_eco_60_3', DATE_SUB(CURDATE(), INTERVAL 20 DAY), DATE_ADD(CURDATE(), INTERVAL 70 DAY), 'active'),
+  ('sub_002', 'usr_002', 'pv_bud_80_6', DATE_SUB(CURDATE(), INTERVAL 300 DAY), DATE_SUB(CURDATE(), INTERVAL 120 DAY), 'expired');
 
 -- PAYMENTS
 INSERT INTO payments (id, subscription_id, user_id, amount, razorpay_payment_id, razorpay_order_id, status, payment_date)
 VALUES
-  ('pay_demo_001', 'sub_demo_001', 'usr_demo_001', 3399.00, 'pay_demo_001', 'order_demo_001', 'success', DATE_SUB(NOW(), INTERVAL 20 DAY)),
-  ('pay_demo_002', 'sub_demo_001', 'usr_demo_001', 3899.00, NULL, 'order_demo_002', 'pending', NULL),
-  ('pay_demo_003', 'sub_demo_002', 'usr_demo_002', 6199.00, 'pay_demo_003', 'order_demo_003', 'failed', DATE_SUB(NOW(), INTERVAL 122 DAY));
+  ('pay_001', 'sub_001', 'usr_001', 3399.00, 'pay_001', 'order_001', 'success', DATE_SUB(NOW(), INTERVAL 20 DAY)),
+  ('pay_002', 'sub_001', 'usr_001', 3899.00, NULL, 'order_002', 'pending', NULL),
+  ('pay_003', 'sub_002', 'usr_002', 6199.00, 'pay_003', 'order_003', 'failed', DATE_SUB(NOW(), INTERVAL 122 DAY));
 
 -- COMPLAINTS
-INSERT INTO complaints (user_id, source, reporter_name, reporter_phone, reporter_email, reporter_address, issue_type, explicit_description, status)
+INSERT INTO complaints (user_id, source, reporter_name, reporter_phone, reporter_email, reporter_address, city, state, pin_code, issue_type, explicit_description, status)
 VALUES
-  ('usr_demo_001', 'AUTHENTICATED', NULL, NULL, NULL, NULL, 'Internet speed', 'Connection speed drops every evening between 7 PM and 10 PM.', 'OPEN'),
-  ('usr_demo_002', 'AUTHENTICATED', NULL, NULL, NULL, NULL, 'Downtime/outage', 'No internet since morning after heavy rain.', 'IN_PROGRESS'),
-  (NULL, 'GUEST', 'Karan Desai', '9974955577', 'karan.guest@example.com', 'Tavra Main Road, Bharuch', 'New connection delay', 'Requested a new connection 5 days ago and installation has not happened yet.', 'OPEN'),
-  ('usr_demo_001', 'AUTHENTICATED', NULL, NULL, NULL, NULL, 'Billing error', 'Billing was corrected by support team.', 'RESOLVED');
+  ('usr_001', 'AUTHENTICATED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Internet speed', 'Connection speed drops every evening between 7 PM and 10 PM.', 'OPEN'),
+  ('usr_002', 'AUTHENTICATED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Downtime/outage', 'No internet since morning after heavy rain.', 'IN_PROGRESS'),
+  (NULL, 'GUEST', 'Karan Desai', '9974955577', 'karan.guest@example.com', 'Tavra Main Road, Bharuch', 'Bharuch', 'Gujarat', '392001', 'New connection delay', 'Requested a new connection 5 days ago and installation has not happened yet.', 'OPEN'),
+  ('usr_001', 'AUTHENTICATED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Billing error', 'Billing was corrected by support team.', 'RESOLVED');
 
 -- OTP CHALLENGES
 INSERT INTO otp_challenges (
@@ -106,12 +107,12 @@ INSERT INTO otp_challenges (
 )
 VALUES
   (
-    'otp_demo_001',
-    'usr_demo_001',
+    'otp_001',
+    'usr_001',
     NULL,
     'FORGOT_PASSWORD',
     'EMAIL',
-    'user@connect2one.in',
+    'ravi@connect2one.in',
     'sha256$demo_hash_forgot_001',
     1,
     5,
@@ -121,12 +122,12 @@ VALUES
     'Seed Script'
   ),
   (
-    'otp_demo_002',
-    'adm_demo_001',
+    'otp_002',
+    'adm_001',
     NULL,
     'ADMIN_LOGIN',
     'EMAIL',
-    'admin@connect2one.in',
+    'rathorjatin70@gmail.com',
     'sha256$demo_hash_admin_001',
     0,
     5,
@@ -136,8 +137,8 @@ VALUES
     'Seed Script'
   ),
   (
-    'otp_demo_003',
-    'tech_demo_001',
+    'otp_003',
+    'usr_002',
     (
       SELECT id
       FROM complaints

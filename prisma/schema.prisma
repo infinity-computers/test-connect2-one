@@ -24,13 +24,16 @@ model users {
 }
 
 model complaints {
-  id                   Int                   @id @default(autoincrement())
+  id                   String                @id @default(uuid()) @db.VarChar(36)
   user_id              String?               @db.VarChar(64)
   source               complaints_source     @default(AUTHENTICATED)
   reporter_name        String?               @db.VarChar(100)
   reporter_phone       String?               @db.VarChar(20)
   reporter_email       String?               @db.VarChar(150)
   reporter_address     String?               @db.Text
+  city                 String?               @db.VarChar(100)
+  state                String?               @db.VarChar(100)
+  pin_code             String?               @db.VarChar(20)
   issue_type           complaints_issue_type
   explicit_description String?               @db.Text
   status               complaints_status     @default(OPEN)
@@ -117,7 +120,7 @@ model subscriptions {
 model otp_challenges {
   id           String          @id @default(uuid()) @db.VarChar(36)
   user_id      String?         @db.VarChar(64)
-  complaint_id Int?
+  complaint_id String?        @db.VarChar(36)
   purpose      otp_purpose
   target_type  otp_target_type
   target       String          @db.VarChar(191)

@@ -1,12 +1,35 @@
 "use client";
 
-import { useState } from 'react';
-import { Users, Wifi, XCircle, DollarSign, Bell, LogOut, Search } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Users, Wifi, XCircle, DollarSign, Bell, LogOut, Search, Loader2, MessageSquare, UserPlus, Eye, EyeOff, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../../context/AuthContext';
-import { adminUsers, kpiStats } from '../../../../data/mockUsers';
-import { mockComplaints } from '../../../../data/mockComplaints';
-import StatusBadge from '../../../../components/ui/StatusBadge';
+
+type ApiUser = {
+  id: string;
+  name: string;
+  email: string;
+  phone: string | null;
+  role: string;
+  auth_type: string;
+};
+
+type ApiComplaint = {
+  id: number;
+  issue_type: string;
+  explicit_description: string | null;
+  status: string;
+  created_at: string;
+  users: { name: string; email: string } | null;
+  reporter_name: string | null;
+};
+
+type KpiStats = {
+  totalUsers: number;
+  activePlans: number;
+  expiredPlans: number;
+  totalRevenue: number;
+};
 
 export default function AdminDashboardClient() {
   const router = useRouter();
@@ -15,23 +38,121 @@ export default function AdminDashboardClient() {
     router.push(path);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
+
+  const [loading, setLoading] = useState(true);
+  const [users, setUsers] = useState<ApiUser[]>([]);
+  const [complaints, setComplaints] = useState<ApiComplaint[]>([]);
   const [search, setSearch] = useState('');
   const [showAlerts, setShowAlerts] = useState(false);
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [savingUser, setSavingUser] = useState(false);
+  const [addUserError, setAddUserError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    role: 'USER',
+    auth_type: 'PASSWORD',
+    password: '',
+  });
 
-  const openComplaints = mockComplaints.filter(c => c.status === 'open');
-  const filtered = adminUsers.filter(u =>
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [usersRes, complaintsRes] = await Promise.all([
+          fetch('/api/admin/users'),
+          fetch('/api/admin/complaints')
+        ]);
+
+        const usersData = await usersRes.json();
+        const complaintsData = await complaintsRes.json();
+
+        setUsers(usersData.users || []);
+        setComplaints(complaintsData.complaints || []);
+      } catch (err) {
+        console.error('Failed to fetch admin data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (user && (user.role === 'ADMIN' || user.role === 'TECHNICIAN')) {
+      fetchData();
+    }
+  }, [user]);
+
+  const handleCreateUser = async () => {
+    setAddUserError('');
+    if (!newUser.name.trim() || !newUser.email.trim()) {
+      setAddUserError('Name and email are required.');
+      return;
+    }
+    if (newUser.auth_type === 'PASSWORD' && !newUser.password) {
+      setAddUserError('Password is required for PASSWORD auth.');
+      return;
+    }
+
+    setSavingUser(true);
+    try {
+      const res = await fetch('/api/admin/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newUser.name.trim(),
+          email: newUser.email.trim().toLowerCase(),
+          phone: newUser.phone.trim() || null,
+          role: newUser.role,
+          auth_type: newUser.auth_type,
+          password: newUser.auth_type === 'PASSWORD' ? newUser.password : undefined,
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAddUserError(data.error || 'Failed to create user');
+        return;
+      }
+
+      setUsers(prev => [data.user, ...prev]);
+      setShowAddUser(false);
+      setNewUser({ name: '', email: '', phone: '', role: 'USER', auth_type: 'PASSWORD', password: '' });
+      setShowPassword(false);
+    } catch {
+      setAddUserError('Failed to create user');
+    } finally {
+      setSavingUser(false);
+    }
+  };
+
+  const kpi: KpiStats = {
+    totalUsers: users.length,
+    activePlans: complaints.filter(c => c.status === 'OPEN' || c.status === 'IN_PROGRESS').length,
+    expiredPlans: 0,
+    totalRevenue: 0,
+  };
+
+  const openComplaints = complaints.filter(c => c.status === 'OPEN');
+  const filtered = users.filter(u =>
     u.name.toLowerCase().includes(search.toLowerCase()) ||
     u.email.toLowerCase().includes(search.toLowerCase()) ||
-    u.phone.includes(search)
+    (u.phone && u.phone.includes(search))
   );
 
-  if (!user || (user.role !== 'admin')) {
+  if (!user || (user.role !== 'ADMIN' && user.role !== 'TECHNICIAN')) {
     return (
       <div className="pt-16 min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center px-4">
           <p className="text-slate-300 mb-4">Admin access required.</p>
-          <button onClick={() => onNavigate('/admin/login')} className="btn-primary px-5 py-2.5">Admin Login</button>
+          <button onClick={() => onNavigate('/login')} className="btn-primary px-5 py-2.5">Admin Login</button>
         </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="pt-16 min-h-screen bg-slate-950 flex items-center justify-center">
+        <Loader2 size={32} className="animate-spin text-blue-400" />
       </div>
     );
   }
@@ -48,6 +169,22 @@ export default function AdminDashboardClient() {
               <p className="text-slate-500 text-sm mt-0.5">Welcome, {user.name}</p>
             </div>
             <div className="flex items-center gap-3">
+              {user.role === 'ADMIN' && (
+                <button
+                  onClick={() => setShowAddUser(true)}
+                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 border border-emerald-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+                >
+                  <UserPlus size={16} />
+                  Add User
+                </button>
+              )}
+              <button
+                onClick={() => onNavigate('/admin/complaints')}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+              >
+                <MessageSquare size={16} />
+                View Complaints
+              </button>
               <div className="relative">
                 <button
                   onClick={() => setShowAlerts(!showAlerts)}
@@ -65,10 +202,10 @@ export default function AdminDashboardClient() {
                     <div className="px-4 py-3 bg-slate-950 border-b border-slate-800">
                       <p className="text-sm font-semibold text-slate-100">Open Complaints ({openComplaints.length})</p>
                     </div>
-                    {openComplaints.map(c => (
+                    {openComplaints.slice(0, 5).map(c => (
                       <div key={c.id} className="px-4 py-3 border-b border-slate-800 hover:bg-slate-950 cursor-pointer" onClick={() => { onNavigate('/admin/complaints'); setShowAlerts(false); }}>
-                        <p className="text-xs font-semibold text-slate-100">{c.id} – {c.issueType}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{c.userName}</p>
+                        <p className="text-xs font-semibold text-slate-100">#{c.id} – {c.issue_type?.replace(/_/g, ' ')}</p>
+                        <p className="text-xs text-slate-500 mt-0.5">{c.users?.name || c.reporter_name || 'Guest'}</p>
                       </div>
                     ))}
                     <div className="px-4 py-3 text-center">
@@ -94,10 +231,10 @@ export default function AdminDashboardClient() {
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { icon: Users, label: 'Total Users', value: kpiStats.totalUsers.toLocaleString(), color: 'text-blue-200 bg-blue-900/40', change: '+12 this month' },
-            { icon: Wifi, label: 'Active Plans', value: kpiStats.activePlans.toLocaleString(), color: 'text-emerald-200 bg-emerald-900/30', change: `${Math.round((kpiStats.activePlans / kpiStats.totalUsers) * 100)}% of users` },
-            { icon: XCircle, label: 'Expired Plans', value: kpiStats.expiredPlans.toLocaleString(), color: 'text-red-200 bg-red-900/30', change: 'Needs renewal' },
-            { icon: DollarSign, label: 'Total Revenue', value: `₹${(kpiStats.totalRevenue / 100000).toFixed(1)}L`, color: 'text-blue-300 bg-blue-900/40', change: 'This year' },
+            { icon: Users, label: 'Total Users', value: kpi.totalUsers.toLocaleString(), color: 'text-blue-200 bg-blue-900/40', change: 'All time' },
+            { icon: Wifi, label: 'Active Plans', value: kpi.activePlans.toLocaleString(), color: 'text-emerald-200 bg-emerald-900/30', change: 'Current' },
+            { icon: XCircle, label: 'Open Complaints', value: openComplaints.length.toString(), color: 'text-red-200 bg-red-900/30', change: 'Needs attention' },
+            { icon: DollarSign, label: 'Total Revenue', value: '₹0', color: 'text-blue-300 bg-blue-900/40', change: 'This year' },
           ].map(({ icon: Icon, label, value, color, change }) => (
             <div key={label} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
               <div className={`inline-flex p-2.5 rounded-xl mb-3 ${color}`}>
@@ -111,9 +248,9 @@ export default function AdminDashboardClient() {
         </div>
 
         {/* Users Table */}
-          <div>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <h2 className="subheading-rhythm text-lg font-bold text-slate-100">All Users</h2>
+        <div>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+            <h2 className="subheading-rhythm text-lg font-bold text-slate-100">All Users</h2>
             <div className="relative">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
               <input
@@ -127,38 +264,161 @@ export default function AdminDashboardClient() {
           </div>
 
           <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-slate-950 border-b border-slate-800">
-                  <tr>
-                    {['ID', 'Name', 'Email', 'Phone', 'Plan', 'Speed', 'Duration', 'Status', 'Expiry'].map(h => (
-                      <th key={h} className="text-left px-4 py-3 text-xs text-slate-400 font-semibold uppercase tracking-wide whitespace-nowrap">{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800">
-                  {filtered.map(u => (
-                    <tr key={u.id} className="hover:bg-slate-950 transition-colors">
-                      <td className="px-4 py-3.5 text-slate-500 text-xs font-mono">{u.id}</td>
-                      <td className="px-4 py-3.5 font-medium text-slate-100 whitespace-nowrap">{u.name}</td>
-                      <td className="px-4 py-3.5 text-slate-300 whitespace-nowrap">{u.email}</td>
-                      <td className="px-4 py-3.5 text-slate-300">{u.phone}</td>
-                      <td className="px-4 py-3.5 text-slate-300">{u.plan}</td>
-                      <td className="px-4 py-3.5 text-slate-300">{u.speed} Mbps</td>
-                      <td className="px-4 py-3.5 text-slate-300 whitespace-nowrap">{u.duration}</td>
-                      <td className="px-4 py-3.5"><StatusBadge status={u.status} size="sm" /></td>
-                      <td className="px-4 py-3.5 text-slate-400 whitespace-nowrap">{u.expiry}</td>
+            {filtered.length === 0 ? (
+              <div className="text-center py-8 text-slate-500 text-sm">No users found.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-950 border-b border-slate-800">
+                    <tr>
+                      {['ID', 'Name', 'Email', 'Phone', 'Role', 'Auth Type'].map(h => (
+                        <th key={h} className="text-left px-4 py-3 text-xs text-slate-400 font-semibold uppercase tracking-wide whitespace-nowrap">{h}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-              {filtered.length === 0 && (
-                <div className="text-center py-8 text-slate-500 text-sm">No users found.</div>
-              )}
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800">
+                    {filtered.map(u => (
+                      <tr key={u.id} className="hover:bg-slate-950 transition-colors">
+                        <td className="px-4 py-3.5 text-slate-500 text-xs font-mono">{u.id}</td>
+                        <td className="px-4 py-3.5 font-medium text-slate-100 whitespace-nowrap">{u.name}</td>
+                        <td className="px-4 py-3.5 text-slate-300 whitespace-nowrap">{u.email}</td>
+                        <td className="px-4 py-3.5 text-slate-300">{u.phone || '-'}</td>
+                        <td className="px-4 py-3.5 text-slate-300">{u.role}</td>
+                        <td className="px-4 py-3.5 text-slate-300">{u.auth_type}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      {showAddUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-slate-900 rounded-3xl shadow-2xl p-8 w-full max-w-lg">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="subheading-rhythm text-lg font-bold text-slate-100">Add User</h3>
+              <button
+                onClick={() => { setShowAddUser(false); setAddUserError(''); }}
+                className="text-slate-500 hover:text-slate-300 p-1"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">Name</label>
+                  <input
+                    type="text"
+                    value={newUser.name}
+                    onChange={e => setNewUser(prev => ({ ...prev, name: e.target.value }))}
+                    className="input-dark py-2.5"
+                    placeholder="Full name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">Email</label>
+                  <input
+                    type="email"
+                    value={newUser.email}
+                    onChange={e => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                    className="input-dark py-2.5"
+                    placeholder="email@domain.com"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">Phone</label>
+                  <input
+                    type="tel"
+                    value={newUser.phone}
+                    onChange={e => setNewUser(prev => ({ ...prev, phone: e.target.value }))}
+                    className="input-dark py-2.5"
+                    placeholder="99749 55542"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">Role</label>
+                  <select
+                    value={newUser.role}
+                    onChange={e => setNewUser(prev => ({ ...prev, role: e.target.value }))}
+                    className="input-dark py-2.5"
+                  >
+                    <option value="USER">User</option>
+                    <option value="TECHNICIAN">Technician</option>
+                    <option value="ADMIN">Admin</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">Auth Type</label>
+                  <select
+                    value={newUser.auth_type}
+                    onChange={e => setNewUser(prev => ({ ...prev, auth_type: e.target.value }))}
+                    className="input-dark py-2.5"
+                  >
+                    <option value="PASSWORD">Password</option>
+                    <option value="OTP">OTP</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      value={newUser.password}
+                      onChange={e => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                      className="input-dark py-2.5 pr-10"
+                      placeholder={newUser.auth_type === 'OTP' ? 'Not required' : 'Set password'}
+                      disabled={newUser.auth_type === 'OTP'}
+                    />
+                    {newUser.auth_type === 'PASSWORD' && (
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {addUserError && (
+                <p className="text-sm text-red-200 bg-red-900/30 border border-red-700/60 rounded-lg px-3 py-2">
+                  {addUserError}
+                </p>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => { setShowAddUser(false); setAddUserError(''); }}
+                  className="flex-1 border border-slate-700 text-slate-200 font-semibold py-2.5 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateUser}
+                  disabled={savingUser}
+                  className="btn-primary flex-1 py-2.5 flex items-center justify-center gap-2 disabled:opacity-60"
+                >
+                  {savingUser ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
+                  {savingUser ? 'Creating...' : 'Create User'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

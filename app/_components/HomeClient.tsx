@@ -90,7 +90,7 @@ export default function HomeClient() {
       </section>
 
       {/* Logged-in user subscription section */}
-      {user && user.role === 'user' && (
+      {user && user.role === 'USER' && (
         <section className="py-14 bg-gradient-to-b from-slate-950 to-slate-900">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <h2 className="subheading-rhythm text-2xl font-bold text-slate-100 mb-6">Your Subscription Dashboard</h2>

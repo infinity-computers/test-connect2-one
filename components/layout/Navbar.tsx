@@ -28,8 +28,8 @@ export default function Navbar({ currentPath, onNavigate }: NavbarProps) {
   ];
 
   const getDashboardPath = () => {
-    if (role === 'admin') return '/admin/dashboard';
-    if (role === 'technician') return '/admin/complaints';
+    if (role === 'ADMIN') return '/admin/dashboard';
+    if (role === 'TECHNICIAN') return '/admin/complaints';
     return '/dashboard';
   };
 

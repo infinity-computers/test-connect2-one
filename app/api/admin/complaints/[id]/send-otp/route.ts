@@ -1,18 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import bcrypt from "bcryptjs";
-import { prisma } from "../../../../lib/prisma";
+import { prisma } from "../../../../../../lib/prisma";
+import { getCurrentUser } from "../../../../../../lib/auth-token";
 
 export const runtime = "nodejs";
 
 const OTP_EXPIRY_MINUTES = 10;
-
-const invalidCredentials = () =>
-  NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
-
-function normalizeEmail(value: unknown): string {
-  return typeof value === "string" ? value.trim().toLowerCase() : "";
-}
 
 function generateOtp(): string {
   return Math.floor(100000 + Math.random() * 900000).toString();
@@ -32,7 +26,7 @@ async function sendOtpEmail(email: string, otp: string) {
   await transporter.sendMail({
     from: "no-reply@connect2one.in",
     to: email,
-    subject: "Your Connect One login OTP",
+    subject: "Complaint resolution OTP",
     text: `Your OTP is ${otp}. It expires in ${OTP_EXPIRY_MINUTES} minutes.`,
   });
 
@@ -54,40 +48,36 @@ async function sendOtpEmail(email: string, otp: string) {
   // await smtpTransporter.sendMail({
   //   from,
   //   to: email,
-  //   subject: "Your Connect One login OTP",
+  //   subject: "Complaint resolution OTP",
   //   text: `Your OTP is ${otp}. It expires in ${OTP_EXPIRY_MINUTES} minutes.`,
   // });
 }
 
-export async function POST(req: NextRequest) {
-  const body = await req.json().catch(() => null);
-  const email = normalizeEmail(body?.email);
+export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getCurrentUser(req);
+  const { id } = await params;
 
-  if (!email) {
-    return NextResponse.json({ error: "Email is required" }, { status: 400 });
+  if (!user || (user.role !== "ADMIN" && user.role !== "TECHNICIAN")) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    const userFound = await prisma.users.findUnique({ where: { email } });
+    const complaint = await prisma.complaints.findUnique({
+      where: { id },
+      include: {
+        users: {
+          select: { email: true, name: true },
+        },
+      },
+    });
 
-    if (!userFound) {
-      return invalidCredentials();
+    if (!complaint) {
+      return NextResponse.json({ error: "Complaint not found" }, { status: 404 });
     }
 
-    if (userFound.auth_type === "PASSWORD") {
-      return NextResponse.json({
-        ok: true,
-        nextStep: "password",
-        email,
-      });
-    }
-
-    if (userFound.auth_type !== "OTP") {
-      return invalidCredentials();
-    }
-
-    if (userFound.role !== "ADMIN" && userFound.role !== "TECHNICIAN") {
-      return invalidCredentials();
+    const targetEmail = complaint.users?.email || complaint.reporter_email;
+    if (!targetEmail) {
+      return NextResponse.json({ error: "No email available for OTP" }, { status: 400 });
     }
 
     const otp = generateOtp();
@@ -96,8 +86,8 @@ export async function POST(req: NextRequest) {
 
     await prisma.otp_challenges.updateMany({
       where: {
-        target: email,
-        purpose: "ADMIN_LOGIN",
+        target: targetEmail,
+        purpose: "COMPLAINT_RESOLVE",
         consumed_at: null,
         expires_at: { gt: new Date() },
       },
@@ -108,10 +98,11 @@ export async function POST(req: NextRequest) {
       data: {
         expires_at: otpExpiry,
         otp_hash: hashedOtp,
-        user_id: userFound.id,
-        purpose: "ADMIN_LOGIN",
+        user_id: complaint.user_id,
+        complaint_id: complaint.id,
+        purpose: "COMPLAINT_RESOLVE",
         target_type: "EMAIL",
-        target: email,
+        target: targetEmail,
         max_attempts: 5,
         request_ip: getRequestIp(req),
         user_agent: req.headers.get("user-agent") || "unknown",
@@ -119,19 +110,11 @@ export async function POST(req: NextRequest) {
       select: { id: true },
     });
 
-    await sendOtpEmail(email, otp);
+    await sendOtpEmail(targetEmail, otp);
 
-    return NextResponse.json({
-      ok: true,
-      nextStep: "otp",
-      email,
-      challengeId: challenge.id,
-    });
+    return NextResponse.json({ ok: true, challengeId: challenge.id });
   } catch (err) {
-    console.error("auth/start error:", err);
-    return NextResponse.json(
-      { error: "INTERNAL SERVER ERROR" },
-      { status: 500 },
-    );
+    console.error("admin/complaints/send-otp error:", err);
+    return NextResponse.json({ error: "INTERNAL SERVER ERROR" }, { status: 500 });
   }
 }

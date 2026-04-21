@@ -1,14 +1,14 @@
 "use client";
 
-import { createContext, useContext, useState, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
-export type UserRole = 'guest' | 'user' | 'admin' | 'technician';
+export type UserRole = 'USER' | 'ADMIN' | 'TECHNICIAN' | 'GUEST';
 
 export interface AuthUser {
   id: string;
   name: string;
   email: string;
-  phone: string;
+  phone?: string;
   role: UserRole;
 }
 
@@ -17,57 +17,54 @@ interface AuthContextType {
   role: UserRole;
   login: (user: AuthUser) => void;
   logout: () => void;
-  setRole: (role: UserRole) => void;
+  loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-const mockUsers: Record<UserRole, AuthUser | null> = {
-  guest: null,
-  user: {
-    id: 'USR001',
-    name: 'Ravi Patel',
-    email: 'ravi.patel@gmail.com',
-    phone: '9876543210',
-    role: 'user',
-  },
-  admin: {
-    id: 'ADM001',
-    name: 'Admin User',
-    email: 'admin@connect2one.in',
-    phone: '9974955542',
-    role: 'admin',
-  },
-  technician: {
-    id: 'TECH001',
-    name: 'Suresh Mehta',
-    email: 'suresh.tech@connect2one.in',
-    phone: '9974955502',
-    role: 'technician',
-  },
-};
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
-  const [role, setRoleState] = useState<UserRole>('guest');
+  const [role, setRoleState] = useState<UserRole>('GUEST');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const res = await fetch('/api/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setUser(data.user);
+            setRoleState(data.user.role);
+          }
+        }
+      } catch (err) {
+        console.error('Auth check failed:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
 
   const login = (u: AuthUser) => {
     setUser(u);
     setRoleState(u.role);
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' });
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
     setUser(null);
-    setRoleState('guest');
-  };
-
-  const setRole = (r: UserRole) => {
-    setRoleState(r);
-    setUser(mockUsers[r]);
+    setRoleState('GUEST');
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, login, logout, setRole }}>
+    <AuthContext.Provider value={{ user, role, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );

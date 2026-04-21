@@ -1,10 +1,42 @@
 "use client";
 
-import { Wifi, Calendar, Clock, DollarSign, RefreshCw, LogOut, User } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Wifi, Calendar, Clock, DollarSign, RefreshCw, LogOut, User, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
-import { activeSubscription, paymentHistory } from '../../../data/mockSubscriptions';
 import StatusBadge from '../../../components/ui/StatusBadge';
+
+type SubscriptionStatus = 'active' | 'expired' | 'cancelled';
+type PaymentStatus = 'pending' | 'success' | 'failed';
+
+type Subscription = {
+  id: string;
+  start_date: string;
+  end_date: string;
+  status: SubscriptionStatus;
+  plan_variants: {
+    speed_mbps: number;
+    duration_months: number;
+    price: number;
+    plans: { name: string };
+  };
+  payments: Payment[];
+};
+
+type Payment = {
+  id: string;
+  amount: number;
+  status: PaymentStatus;
+  payment_date: string | null;
+  created_at: string;
+  subscriptions: {
+    plan_variants: {
+      speed_mbps: number;
+      duration_months: number;
+      plans: { name: string };
+    };
+  };
+};
 
 export default function DashboardClient() {
   const router = useRouter();
@@ -14,7 +46,36 @@ export default function DashboardClient() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  if (!user || user.role !== 'user') {
+  const [loading, setLoading] = useState(true);
+  const [subscription, setSubscription] = useState<Subscription | null>(null);
+  const [payments, setPayments] = useState<Payment[]>([]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchData = async () => {
+      try {
+        const [subRes, payRes] = await Promise.all([
+          fetch('/api/subscriptions/me'),
+          fetch('/api/payments/me')
+        ]);
+
+        const subData = await subRes.json();
+        const payData = await payRes.json();
+
+        setSubscription(subData.subscription);
+        setPayments(payData.payments || []);
+      } catch (err) {
+        console.error('Failed to fetch dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [user]);
+
+  if (!user || user.role !== 'USER') {
     return (
       <div className="pt-16 min-h-screen bg-slate-950 flex items-center justify-center px-4">
         <div className="text-center">
@@ -25,9 +86,21 @@ export default function DashboardClient() {
     );
   }
 
-  const daysLeft = Math.max(0, Math.ceil((new Date(activeSubscription.expiresOn).getTime() - Date.now()) / 86400000));
-  const totalDays = activeSubscription.months * 30;
-  const usedPct = Math.min(100, Math.round(((totalDays - daysLeft) / totalDays) * 100));
+  const daysLeft = subscription ? Math.max(0, Math.ceil((new Date(subscription.end_date).getTime() - Date.now()) / 86400000)) : 0;
+  const totalDays = subscription ? subscription.plan_variants.duration_months * 30 : 0;
+  const usedPct = totalDays > 0 ? Math.min(100, Math.round(((totalDays - daysLeft) / totalDays) * 100)) : 0;
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  if (loading) {
+    return (
+      <div className="pt-16 min-h-screen bg-slate-950 flex items-center justify-center">
+        <Loader2 size={32} className="animate-spin text-blue-400" />
+      </div>
+    );
+  }
 
   return (
     <div className="pt-16 min-h-screen bg-slate-950">
@@ -45,7 +118,7 @@ export default function DashboardClient() {
                   <h1 className="subheading-rhythm text-xl font-bold">{user.name}</h1>
                 </div>
               </div>
-              <p className="text-slate-400 text-xs ml-13 pl-0.5">{user.email} &nbsp;·&nbsp; {user.phone}</p>
+              <p className="text-slate-400 text-xs ml-13 pl-0.5">{user.email} {user.phone && `· ${user.phone}`}</p>
             </div>
             <button
               onClick={() => { logout(); onNavigate('/'); }}
@@ -61,58 +134,67 @@ export default function DashboardClient() {
         {/* Active Subscription */}
         <div>
           <h2 className="subheading-rhythm text-lg font-bold text-slate-100 mb-4">Active Subscription</h2>
-          <div className="bg-gradient-to-br from-blue-800 to-blue-900 rounded-2xl p-6 text-white">
-            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-slate-800/60 rounded-xl"><Wifi size={18} /></div>
-                  <div>
-                    <p className="font-bold text-lg">{activeSubscription.planName}</p>
-                    <p className="text-slate-400 text-xs">{activeSubscription.category} Tier</p>
-                  </div>
-                  <StatusBadge status={activeSubscription.status} />
-                </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
-                  {[
-                    { icon: Wifi, label: 'Speed', value: `${activeSubscription.speed} Mbps` },
-                    { icon: Clock, label: 'Duration', value: activeSubscription.duration },
-                    { icon: DollarSign, label: 'Amount', value: `₹${activeSubscription.price.toLocaleString()}` },
-                    { icon: Calendar, label: 'Active Since', value: activeSubscription.activeSince },
-                    { icon: Calendar, label: 'Expires On', value: activeSubscription.expiresOn },
-                    { icon: Clock, label: 'Days Left', value: `${daysLeft} days` },
-                  ].map(({ icon: Icon, label, value }) => (
-                    <div key={label} className="bg-slate-800/50 rounded-xl p-3">
-                      <div className="flex items-center gap-1.5 mb-1">
-                        <Icon size={12} className="text-slate-400" />
-                        <p className="text-slate-400 text-xs">{label}</p>
-                      </div>
-                      <p className="font-semibold text-sm">{value}</p>
+          {subscription ? (
+            <div className="bg-gradient-to-br from-blue-800 to-blue-900 rounded-2xl p-6 text-white">
+              <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6">
+                <div className="flex-1">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 bg-slate-800/60 rounded-xl"><Wifi size={18} /></div>
+                    <div>
+                      <p className="font-bold text-lg">{subscription.plan_variants.plans.name}</p>
+                      <p className="text-slate-400 text-xs">{subscription.plan_variants.plans.name} Plan</p>
                     </div>
-                  ))}
-                </div>
-                <div>
-                  <div className="flex justify-between text-xs mb-1.5">
-                    <span className="text-slate-400">Plan Usage</span>
-                    <span className="text-white font-semibold">{usedPct}% used</span>
+                    <StatusBadge status={subscription.status} />
                   </div>
-                  <div className="w-full bg-slate-800/70 rounded-full h-2">
-                    <div
-                      className={`h-2 rounded-full transition-all ${usedPct > 80 ? 'bg-red-400' : usedPct > 50 ? 'bg-yellow-400' : 'bg-emerald-400'}`}
-                      style={{ width: `${usedPct}%` }}
-                    />
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-5">
+                    {[
+                      { icon: Wifi, label: 'Speed', value: `${subscription.plan_variants.speed_mbps} Mbps` },
+                      { icon: Clock, label: 'Duration', value: `${subscription.plan_variants.duration_months} Months` },
+                      { icon: DollarSign, label: 'Amount', value: `₹${Number(subscription.plan_variants.price).toLocaleString()}` },
+                      { icon: Calendar, label: 'Active Since', value: formatDate(subscription.start_date) },
+                      { icon: Calendar, label: 'Expires On', value: formatDate(subscription.end_date) },
+                      { icon: Clock, label: 'Days Left', value: `${daysLeft} days` },
+                    ].map(({ icon: Icon, label, value }) => (
+                      <div key={label} className="bg-slate-800/50 rounded-xl p-3">
+                        <div className="flex items-center gap-1.5 mb-1">
+                          <Icon size={12} className="text-slate-400" />
+                          <p className="text-slate-400 text-xs">{label}</p>
+                        </div>
+                        <p className="font-semibold text-sm">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <div className="flex justify-between text-xs mb-1.5">
+                      <span className="text-slate-400">Plan Usage</span>
+                      <span className="text-white font-semibold">{usedPct}% used</span>
+                    </div>
+                    <div className="w-full bg-slate-800/70 rounded-full h-2">
+                      <div
+                        className={`h-2 rounded-full transition-all ${usedPct > 80 ? 'bg-red-400' : usedPct > 50 ? 'bg-yellow-400' : 'bg-emerald-400'}`}
+                        style={{ width: `${usedPct}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="shrink-0">
-                <button
-                  onClick={() => onNavigate('/my-subscriptions')}
-                  className="btn-primary flex items-center gap-2 px-5 py-3 whitespace-nowrap"
-                >
-                  <RefreshCw size={15} /> Renew Plan
-                </button>
+                <div className="shrink-0">
+                  <button
+                    onClick={() => onNavigate('/my-subscriptions')}
+                    className="btn-primary flex items-center gap-2 px-5 py-3 whitespace-nowrap"
+                  >
+                    <RefreshCw size={15} /> Renew Plan
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center">
+              <p className="text-slate-400 mb-4">No active subscription found.</p>
+              <button onClick={() => onNavigate('/plans')} className="btn-primary px-5 py-2.5">
+                View Plans
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Payment History */}
@@ -122,7 +204,7 @@ export default function DashboardClient() {
             <button onClick={() => onNavigate('/my-subscriptions')} className="text-sm text-link font-medium">View all</button>
           </div>
           <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-            {paymentHistory.length === 0 ? (
+            {payments.length === 0 ? (
               <div className="p-10 text-center text-slate-500 text-sm">No payment history found.</div>
             ) : (
               <div className="overflow-x-auto">
@@ -135,14 +217,14 @@ export default function DashboardClient() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800">
-                    {paymentHistory.map(pay => (
+                    {payments.map(pay => (
                       <tr key={pay.id} className="hover:bg-slate-950 transition-colors">
-                        <td className="px-4 py-3.5 font-medium text-slate-100 whitespace-nowrap">{pay.plan}</td>
-                        <td className="px-4 py-3.5 text-slate-300">{pay.speed} Mbps</td>
-                        <td className="px-4 py-3.5 text-slate-300 whitespace-nowrap">{pay.duration}</td>
-                        <td className="px-4 py-3.5 font-semibold text-slate-100">₹{pay.amount.toLocaleString()}</td>
+                        <td className="px-4 py-3.5 font-medium text-slate-100 whitespace-nowrap">{pay.subscriptions?.plan_variants?.plans?.name || 'N/A'}</td>
+                        <td className="px-4 py-3.5 text-slate-300">{pay.subscriptions?.plan_variants?.speed_mbps || '-'} Mbps</td>
+                        <td className="px-4 py-3.5 text-slate-300 whitespace-nowrap">{pay.subscriptions?.plan_variants?.duration_months || '-'} Months</td>
+                        <td className="px-4 py-3.5 font-semibold text-slate-100">₹{Number(pay.amount).toLocaleString()}</td>
                         <td className="px-4 py-3.5"><StatusBadge status={pay.status} size="sm" /></td>
-                        <td className="px-4 py-3.5 text-slate-400 whitespace-nowrap">{pay.date}</td>
+                        <td className="px-4 py-3.5 text-slate-400 whitespace-nowrap">{pay.payment_date ? formatDate(pay.payment_date) : '-'}</td>
                       </tr>
                     ))}
                   </tbody>

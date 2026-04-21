@@ -1,0 +1,16 @@
+SET FOREIGN_KEY_CHECKS = 0;
+
+ALTER TABLE otp_challenges DROP FOREIGN KEY fk_otp_complaint;
+
+ALTER TABLE complaints
+  MODIFY COLUMN id VARCHAR(36) NOT NULL;
+
+ALTER TABLE otp_challenges
+  MODIFY COLUMN complaint_id VARCHAR(36) NULL;
+
+ALTER TABLE otp_challenges
+  ADD CONSTRAINT fk_otp_complaint
+  FOREIGN KEY (complaint_id) REFERENCES complaints(id)
+  ON DELETE CASCADE ON UPDATE RESTRICT;
+
+SET FOREIGN_KEY_CHECKS = 1;

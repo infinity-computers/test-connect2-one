@@ -33,6 +33,10 @@ export function getAuthPayloadFromRequest(req: NextRequest): AuthTokenPayload | 
   return verifyAuthToken(token);
 }
 
+export async function getCurrentUser(req: NextRequest): Promise<AuthTokenPayload | null> {
+  return getAuthPayloadFromRequest(req);
+}
+
 export function roleToRedirect(role: AuthRole): string {
   if (role === "ADMIN") return "/admin/dashboard";
   if (role === "TECHNICIAN") return "/admin/complaints";

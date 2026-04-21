@@ -1,12 +1,14 @@
 "use client";
 
-type Status = 'active' | 'expired' | 'pending' | 'paid' | 'failed' | 'open' | 'in_progress' | 'resolved';
+type Status = 'active' | 'expired' | 'cancelled' | 'pending' | 'paid' | 'success' | 'failed' | 'open' | 'in_progress' | 'resolved';
 
 const config: Record<Status, { label: string; classes: string }> = {
   active:      { label: 'Active',      classes: 'bg-emerald-900/30 text-emerald-200 border-emerald-700/60' },
   expired:     { label: 'Expired',     classes: 'bg-red-900/30 text-red-200 border-red-700/60' },
+  cancelled:   { label: 'Cancelled',   classes: 'bg-slate-900/40 text-slate-200 border-slate-700/60' },
   pending:     { label: 'Pending',     classes: 'bg-amber-900/30 text-amber-200 border-amber-700/60' },
   paid:        { label: 'Paid',        classes: 'bg-emerald-900/30 text-emerald-200 border-emerald-700/60' },
+  success:     { label: 'Success',     classes: 'bg-emerald-900/30 text-emerald-200 border-emerald-700/60' },
   failed:      { label: 'Failed',      classes: 'bg-red-900/30 text-red-200 border-red-700/60' },
   open:        { label: 'Open',        classes: 'bg-blue-900/35 text-blue-200 border-blue-700/60' },
   in_progress: { label: 'In Progress', classes: 'bg-amber-900/35 text-amber-200 border-amber-700/60' },

@@ -1,10 +1,22 @@
 "use client";
 
 import { useState } from 'react';
-import { Phone, Mail, Clock, MessageCircle, Send, LogIn, CheckCircle } from 'lucide-react';
+import { Phone, Mail, Clock, MessageCircle, Send, CheckCircle, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
-import { issueTypes } from '../../../data/mockComplaints';
+
+const issueTypes = [
+  "Internet_speed",
+  "Downtime_outage",
+  "Billing_error",
+  "Equipment_fault",
+  "New_connection_delay",
+  "Poor_signal",
+  "Not_working_more_than_4_hours",
+  "Not_working_more_than_24_hours",
+  "Not_working_more_than_48_hours",
+  "Other"
+];
 
 export default function ContactClient() {
   const router = useRouter();
@@ -13,24 +25,97 @@ export default function ContactClient() {
     router.push(path);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
-  const [form, setForm] = useState({ issue_type: '', description: '' });
+
+  const [form, setForm] = useState({
+    issue_type: '',
+    description: '',
+    name: '',
+    phone: '',
+    email: '',
+    address: '',
+    city: 'Bharuch',
+    state: 'Gujarat',
+    pin_code: '392001'
+  });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
-  const [mockId] = useState('CMP-' + Date.now().toString().slice(-6));
+  const [complaintId, setComplaintId] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const validate = () => {
     const e: Record<string, string> = {};
     if (!form.issue_type) e.issue_type = 'Please select an issue type.';
-    if (form.issue_type === 'Other' && !form.description.trim()) e.description = 'Please describe your issue.';
+    
+    if (!user) {
+      if (!form.name.trim()) e.name = 'Please enter your name.';
+      if (!form.phone.trim()) e.phone = 'Please enter your contact number.';
+      if (!form.email.trim()) e.email = 'Please enter your email.';
+      if (!form.address.trim()) e.address = 'Please enter your address.';
+      if (!form.city.trim()) e.city = 'Please enter your city.';
+      if (!form.state.trim()) e.state = 'Please enter your state.';
+      if (!form.pin_code.trim()) e.pin_code = 'Please enter your pin code.';
+    }
+    
+    if (form.issue_type === 'Other' && !form.description.trim()) {
+      e.description = 'Please describe your issue.';
+    }
     if (form.description.length > 1000) e.description = 'Description must be under 1000 characters.';
     return e;
   };
 
-  const handleSubmit = (ev: React.FormEvent) => {
+  const handleSubmit = async (ev: React.FormEvent) => {
     ev.preventDefault();
     const e = validate();
     if (Object.keys(e).length) { setErrors(e); return; }
-    setSubmitted(true);
+    
+    setLoading(true);
+    setErrors({});
+
+    try {
+      const payload: {
+        issue_type: string;
+        description: string;
+        name?: string;
+        phone?: string;
+        email?: string;
+        address?: string;
+        city?: string;
+        state?: string;
+        pin_code?: string;
+      } = {
+        issue_type: form.issue_type,
+        description: form.description
+      };
+
+      if (!user) {
+        payload.name = form.name;
+        payload.phone = form.phone;
+        payload.email = form.email;
+        payload.address = form.address;
+        payload.city = form.city;
+        payload.state = form.state;
+        payload.pin_code = form.pin_code;
+      }
+
+      const res = await fetch('/api/complaints', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErrors({ general: data.error || 'Failed to submit complaint' });
+        setLoading(false);
+        return;
+      }
+
+      setComplaintId(data.complaintId?.toString() || '');
+      setSubmitted(true);
+    } catch {
+      setErrors({ general: 'Something went wrong. Please try again.' });
+    }
+    setLoading(false);
   };
 
   return (
@@ -69,33 +154,32 @@ export default function ContactClient() {
         {/* Complaint Section */}
         <div className="max-w-2xl mx-auto">
           <h2 className="subheading-rhythm text-2xl font-bold text-slate-100 mb-2">Raise a Complaint</h2>
-          <p className="copy-rhythm text-slate-400 mb-6 text-sm">Facing an issue with your connection? Submit a complaint and our team will respond promptly.</p>
+          <p className="copy-rhythm text-slate-400 mb-6 text-sm">
+            {user 
+              ? 'Submit a complaint and our team will respond promptly.' 
+              : 'Fill the form below and our team will respond promptly. You may also login for faster service.'}
+          </p>
 
-          {!user ? (
-            <div className="bg-slate-900 border-2 border-dashed border-slate-700 rounded-2xl p-10 text-center">
-              <div className="inline-flex p-4 bg-slate-800 rounded-full mb-4">
-                <LogIn size={24} className="text-slate-500" />
-              </div>
-              <h3 className="subheading-rhythm font-semibold text-slate-100 mb-2">Login Required</h3>
-              <p className="copy-rhythm text-slate-400 text-sm mb-5">Please sign in to your account to submit a complaint.</p>
-              <button
-                onClick={() => onNavigate('/login')}
-                className="btn-primary px-6 py-2.5"
-              >
+          {!user && (
+            <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-4 mb-6 flex items-center justify-between">
+              <p className="text-sm text-slate-300">Login for faster service and track your complaint</p>
+              <button onClick={() => onNavigate('/login')} className="btn-primary px-4 py-2 text-sm">
                 Sign In
               </button>
             </div>
-          ) : submitted ? (
+          )}
+
+          {submitted ? (
             <div className="bg-slate-900 border border-emerald-700/60 rounded-2xl p-10 text-center">
               <div className="inline-flex p-4 bg-emerald-900/30 rounded-full mb-4">
                 <CheckCircle size={28} className="text-emerald-300" />
               </div>
               <h3 className="subheading-rhythm font-bold text-xl text-slate-100 mb-2">Complaint Submitted!</h3>
               <p className="copy-rhythm text-slate-400 text-sm mb-1">Your complaint has been registered successfully.</p>
-              <p className="text-sm font-semibold text-blue-200 mb-5">Complaint ID: {mockId}</p>
+              <p className="text-sm font-semibold text-blue-200 mb-5">Complaint ID: {complaintId}</p>
               <p className="text-xs text-slate-500">Our team will contact you within the resolution window as per your plan type.</p>
               <button
-                onClick={() => { setSubmitted(false); setForm({ issue_type: '', description: '' }); }}
+                onClick={() => { setSubmitted(false); setForm({ issue_type: '', description: '', name: '', phone: '', email: '', address: '', city: 'Bharuch', state: 'Gujarat', pin_code: '392001' }); }}
                 className="mt-5 border border-slate-700 text-slate-200 hover:border-blue-700 font-semibold px-5 py-2 rounded-xl transition-colors text-sm"
               >
                 Submit Another
@@ -112,10 +196,94 @@ export default function ContactClient() {
                     className={`input-dark py-2.5 ${errors.issue_type ? 'border-red-400' : 'border-slate-700'}`}
                   >
                     <option value="">Select issue type</option>
-                    {issueTypes.map(t => <option key={t} value={t}>{t}</option>)}
+                    {issueTypes.map(t => <option key={t} value={t}>{t.replace(/_/g, ' ')}</option>)}
                   </select>
                   {errors.issue_type && <p className="text-xs text-red-300 mt-1">{errors.issue_type}</p>}
                 </div>
+
+                {/* Guest fields */}
+                {!user && (
+                  <>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-200 mb-1.5">Name <span className="text-red-300">*</span></label>
+                        <input
+                          type="text"
+                          value={form.name}
+                          onChange={e => { setForm(f => ({ ...f, name: e.target.value })); setErrors(er => ({ ...er, name: '' })); }}
+                          className={`input-dark py-2.5 ${errors.name ? 'border-red-400' : 'border-slate-700'}`}
+                          placeholder="Your full name"
+                        />
+                        {errors.name && <p className="text-xs text-red-300 mt-1">{errors.name}</p>}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-200 mb-1.5">Contact Number <span className="text-red-300">*</span></label>
+                        <input
+                          type="tel"
+                          value={form.phone}
+                          onChange={e => { setForm(f => ({ ...f, phone: e.target.value })); setErrors(er => ({ ...er, phone: '' })); }}
+                          className={`input-dark py-2.5 ${errors.phone ? 'border-red-400' : 'border-slate-700'}`}
+                          placeholder="99749 55542"
+                        />
+                        {errors.phone && <p className="text-xs text-red-300 mt-1">{errors.phone}</p>}
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Email <span className="text-red-300">*</span></label>
+                      <input
+                        type="email"
+                        value={form.email}
+                        onChange={e => { setForm(f => ({ ...f, email: e.target.value })); setErrors(er => ({ ...er, email: '' })); }}
+                        className={`input-dark py-2.5 ${errors.email ? 'border-red-400' : 'border-slate-700'}`}
+                        placeholder="you@example.com"
+                      />
+                      {errors.email && <p className="text-xs text-red-300 mt-1">{errors.email}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Address <span className="text-red-300">*</span></label>
+                      <input
+                        type="text"
+                        value={form.address}
+                        onChange={e => { setForm(f => ({ ...f, address: e.target.value })); setErrors(er => ({ ...er, address: '' })); }}
+                        className={`input-dark py-2.5 ${errors.address ? 'border-red-400' : 'border-slate-700'}`}
+                        placeholder="Address Line 1"
+                      />
+                      {errors.address && <p className="text-xs text-red-300 mt-1">{errors.address}</p>}
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      <div className="col-span-1">
+                        <label className="block text-sm font-semibold text-slate-200 mb-1.5">City <span className="text-red-300">*</span></label>
+                        <input
+                          type="text"
+                          value={form.city}
+                          onChange={e => { setForm(f => ({ ...f, city: e.target.value })); setErrors(er => ({ ...er, city: '' })); }}
+                          className={`input-dark py-2.5 ${errors.city ? 'border-red-400' : 'border-slate-700'}`}
+                        />
+                        {errors.city && <p className="text-xs text-red-300 mt-1">{errors.city}</p>}
+                      </div>
+                      <div className="col-span-1">
+                        <label className="block text-sm font-semibold text-slate-200 mb-1.5">State <span className="text-red-300">*</span></label>
+                        <input
+                          type="text"
+                          value={form.state}
+                          onChange={e => { setForm(f => ({ ...f, state: e.target.value })); setErrors(er => ({ ...er, state: '' })); }}
+                          className={`input-dark py-2.5 ${errors.state ? 'border-red-400' : 'border-slate-700'}`}
+                        />
+                        {errors.state && <p className="text-xs text-red-300 mt-1">{errors.state}</p>}
+                      </div>
+                      <div className="col-span-2 sm:col-span-2">
+                        <label className="block text-sm font-semibold text-slate-200 mb-1.5">Pin Code <span className="text-red-300">*</span></label>
+                        <input
+                          type="text"
+                          value={form.pin_code}
+                          onChange={e => { setForm(f => ({ ...f, pin_code: e.target.value })); setErrors(er => ({ ...er, pin_code: '' })); }}
+                          className={`input-dark py-2.5 ${errors.pin_code ? 'border-red-400' : 'border-slate-700'}`}
+                        />
+                        {errors.pin_code && <p className="text-xs text-red-300 mt-1">{errors.pin_code}</p>}
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <div>
                   <label className="block text-sm font-semibold text-slate-200 mb-1.5">
@@ -136,11 +304,15 @@ export default function ContactClient() {
                   </div>
                 </div>
 
+                {errors.general && <p className="text-xs text-red-200 bg-red-900/30 border border-red-700/60 rounded-lg px-3 py-2">{errors.general}</p>}
+
                 <button
                   type="submit"
-                  className="btn-primary w-full py-3 flex items-center justify-center gap-2"
+                  disabled={loading}
+                  className="btn-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-60"
                 >
-                  <Send size={16} /> Submit Complaint
+                  {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={16} />}
+                  {loading ? 'Submitting...' : 'Submit Complaint'}
                 </button>
               </form>
             </div>
