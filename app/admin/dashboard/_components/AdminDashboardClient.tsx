@@ -162,17 +162,17 @@ export default function AdminDashboardClient() {
       {/* Admin Header */}
       <div className="bg-gradient-to-br from-slate-950 to-slate-900 text-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            <div>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
               <p className="text-slate-300 text-xs mb-1">Admin Portal</p>
               <h1 className="subheading-rhythm text-2xl font-bold">Dashboard</h1>
               <p className="text-slate-500 text-sm mt-0.5">Welcome, {user.name}</p>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-stretch gap-2 sm:gap-3 sm:items-center sm:justify-end">
               {user.role === 'ADMIN' && (
                 <button
                   onClick={() => setShowAddUser(true)}
-                  className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 border border-emerald-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+                  className="flex w-full sm:w-auto items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 border border-emerald-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
                 >
                   <UserPlus size={16} />
                   Add User
@@ -180,7 +180,7 @@ export default function AdminDashboardClient() {
               )}
               <button
                 onClick={() => onNavigate('/admin/complaints')}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+                className="flex w-full sm:w-auto items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
               >
                 <MessageSquare size={16} />
                 View Complaints
@@ -198,7 +198,7 @@ export default function AdminDashboardClient() {
                   )}
                 </button>
                 {showAlerts && (
-                  <div className="absolute right-0 top-12 w-72 bg-slate-900 rounded-2xl shadow-xl border border-slate-800 z-50 overflow-hidden">
+                  <div className="absolute right-0 top-12 w-[calc(100vw-2rem)] sm:w-72 bg-slate-900 rounded-2xl shadow-xl border border-slate-800 z-50 overflow-hidden">
                     <div className="px-4 py-3 bg-slate-950 border-b border-slate-800">
                       <p className="text-sm font-semibold text-slate-100">Open Complaints ({openComplaints.length})</p>
                     </div>
@@ -218,7 +218,7 @@ export default function AdminDashboardClient() {
               </div>
               <button
                 onClick={() => { logout(); onNavigate('/'); }}
-                className="flex items-center gap-2 bg-slate-800/50 hover:bg-slate-800/70 border border-slate-600 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+                className="flex w-full sm:w-auto items-center justify-center gap-2 bg-slate-800/50 hover:bg-slate-800/70 border border-slate-600 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
               >
                 <LogOut size={14} /> Sign Out
               </button>
@@ -229,7 +229,7 @@ export default function AdminDashboardClient() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {[
             { icon: Users, label: 'Total Users', value: kpi.totalUsers.toLocaleString(), color: 'text-blue-200 bg-blue-900/40', change: 'All time' },
             { icon: Wifi, label: 'Active Plans', value: kpi.activePlans.toLocaleString(), color: 'text-emerald-200 bg-emerald-900/30', change: 'Current' },
@@ -249,7 +249,7 @@ export default function AdminDashboardClient() {
 
         {/* Users Table */}
         <div>
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
             <h2 className="subheading-rhythm text-lg font-bold text-slate-100">All Users</h2>
             <div className="relative">
               <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
@@ -258,7 +258,7 @@ export default function AdminDashboardClient() {
                 placeholder="Search users..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="input-dark pl-9 py-2 w-56"
+                className="input-dark pl-9 py-2 w-full sm:w-56"
               />
             </div>
           </div>
@@ -268,7 +268,7 @@ export default function AdminDashboardClient() {
               <div className="text-center py-8 text-slate-500 text-sm">No users found.</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full min-w-[720px] text-sm">
                   <thead className="bg-slate-950 border-b border-slate-800">
                     <tr>
                       {['ID', 'Name', 'Email', 'Phone', 'Role', 'Auth Type'].map(h => (
@@ -296,8 +296,8 @@ export default function AdminDashboardClient() {
       </div>
 
       {showAddUser && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="bg-slate-900 rounded-3xl shadow-2xl p-8 w-full max-w-lg">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 px-4 py-4 overflow-y-auto">
+          <div className="bg-slate-900 rounded-3xl shadow-2xl p-5 sm:p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
               <h3 className="subheading-rhythm text-lg font-bold text-slate-100">Add User</h3>
               <button
@@ -399,7 +399,7 @@ export default function AdminDashboardClient() {
                 </p>
               )}
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <button
                   onClick={() => { setShowAddUser(false); setAddUserError(''); }}
                   className="flex-1 border border-slate-700 text-slate-200 font-semibold py-2.5 rounded-xl transition-colors"
