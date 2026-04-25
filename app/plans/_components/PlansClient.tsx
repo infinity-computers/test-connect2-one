@@ -32,7 +32,7 @@ const categoryInfo: Record<
 export default function PlansClient() {
   const [activeCategory, setActiveCategory] = useState<PlanCategory>("Eco");
   const [selectedDuration, setSelectedDuration] = useState<"3m" | "6m" | "12m">(
-    "3m",
+    "12m",
   );
 
   const filtered = plans.filter((p) => p.category === activeCategory);
