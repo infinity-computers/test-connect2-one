@@ -18,6 +18,27 @@ type ComplaintBody = {
   pin_code?: string;
 };
 
+function generateTrackingCode(): string {
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let code = "C2O-";
+  for (let i = 0; i < 6; i += 1) {
+    code += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return code;
+}
+
+async function createUniqueTrackingCode(): Promise<string> {
+  while (true) {
+    const trackingCode = generateTrackingCode();
+    const existing = await prisma.complaints.findUnique({
+      where: { tracking_code: trackingCode },
+      select: { id: true },
+    });
+
+    if (!existing) return trackingCode;
+  }
+}
+
 function createSendmailTransport() {
   return nodemailer.createTransport({
     sendmail: true,
@@ -28,6 +49,7 @@ function createSendmailTransport() {
 
 async function sendComplaintEmails(options: {
   complaintId: string;
+  trackingCode: string;
   issueType: string;
   description?: string | null;
   customerName: string;
@@ -37,16 +59,17 @@ async function sendComplaintEmails(options: {
   city?: string | null;
   state?: string | null;
   pinCode?: string | null;
+  adminEmails: string[];
 }) {
   const transporter = createSendmailTransport();
   const from = "no-reply@connect2one.in";
-  const careEmail = "care@connect2one.in";
 
   const customerText = [
     "Hi,",
     "",
     "We have received your complaint.",
     `Complaint ID: ${options.complaintId}`,
+    `Tracking Code: ${options.trackingCode}`,
     `Issue Type: ${options.issueType.replace(/_/g, " ")}`,
     options.description ? `Description: ${options.description}` : null,
     "",
@@ -62,6 +85,7 @@ async function sendComplaintEmails(options: {
     "New complaint received",
     "",
     `Complaint ID: ${options.complaintId}`,
+    `Tracking Code: ${options.trackingCode}`,
     `Customer Name: ${options.customerName}`,
     `Customer Email: ${options.customerEmail}`,
     options.customerPhone ? `Customer Phone: ${options.customerPhone}` : null,
@@ -84,7 +108,8 @@ async function sendComplaintEmails(options: {
     }),
     transporter.sendMail({
       from,
-      to: careEmail,
+      to: options.adminEmails[0] || options.customerEmail,
+      bcc: options.adminEmails.slice(1),
       subject: `New Complaint - ${options.complaintId}`,
       text: careText,
     }),
@@ -136,8 +161,10 @@ export async function POST(req: NextRequest) {
 
   try {
     if (user) {
+      const trackingCode = await createUniqueTrackingCode();
       const complaint = await prisma.complaints.create({
         data: {
+          tracking_code: trackingCode,
           user_id: user.userId,
           source: "AUTHENTICATED",
           issue_type: issue_type as complaints_issue_type,
@@ -145,17 +172,25 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      const adminUsers = await prisma.users.findMany({
+        where: { role: "ADMIN" },
+        select: { email: true },
+      });
+      const adminEmails = [...new Set(adminUsers.map((admin) => admin.email).filter(Boolean))];
+
       sendComplaintEmails({
         complaintId: complaint.id,
+        trackingCode,
         issueType: issue_type,
         description: description || null,
         customerName: user.name || user.email,
         customerEmail: user.email,
+        adminEmails,
       }).catch((err) => {
         console.error("api/complaints email error:", err);
       });
 
-      return NextResponse.json({ ok: true, complaintId: complaint.id });
+      return NextResponse.json({ ok: true, complaintId: complaint.id, trackingCode });
     } else {
       if (!name || !phone || !email || !address || !city || !state || !pin_code) {
         return NextResponse.json(
@@ -164,8 +199,10 @@ export async function POST(req: NextRequest) {
         );
       }
 
+      const trackingCode = await createUniqueTrackingCode();
       const complaint = await prisma.complaints.create({
         data: {
+          tracking_code: trackingCode,
           source: "GUEST",
           reporter_name: name,
           reporter_phone: phone,
@@ -179,8 +216,15 @@ export async function POST(req: NextRequest) {
         },
       });
 
+      const adminUsers = await prisma.users.findMany({
+        where: { role: "ADMIN" },
+        select: { email: true },
+      });
+      const adminEmails = [...new Set(adminUsers.map((admin) => admin.email).filter(Boolean))];
+
       sendComplaintEmails({
         complaintId: complaint.id,
+        trackingCode,
         issueType: issue_type,
         description: description || null,
         customerName: name,
@@ -190,11 +234,12 @@ export async function POST(req: NextRequest) {
         city: city || null,
         state: state || null,
         pinCode: pin_code || null,
+        adminEmails,
       }).catch((err) => {
         console.error("api/complaints email error:", err);
       });
 
-      return NextResponse.json({ ok: true, complaintId: complaint.id });
+      return NextResponse.json({ ok: true, complaintId: complaint.id, trackingCode });
     }
   } catch (err) {
     console.error("api/complaints POST error:", err);

@@ -53,6 +53,30 @@ async function sendOtpEmail(email: string, otp: string) {
   // });
 }
 
+async function sendTrackingEmail(email: string, trackingCode: string) {
+  const transporter = nodemailer.createTransport({
+    sendmail: true,
+    newline: "unix",
+    path: "/usr/sbin/sendmail",
+  });
+
+  await transporter.sendMail({
+    from: "no-reply@connect2one.in",
+    to: email,
+    subject: `Complaint Tracking Code - ${trackingCode}`,
+    text: [
+      "Hi,",
+      "",
+      "Your complaint is being processed.",
+      `Tracking Code: ${trackingCode}`,
+      "Use this code to track your complaint.",
+      "",
+      "Regards,",
+      "Connect One Networks",
+    ].join("\n"),
+  });
+}
+
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const user = await getCurrentUser(req);
   const { id } = await params;
@@ -110,7 +134,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       select: { id: true },
     });
 
-    await sendOtpEmail(targetEmail, otp);
+    await Promise.all([
+      sendOtpEmail(targetEmail, otp),
+      sendTrackingEmail(targetEmail, complaint.tracking_code),
+    ]);
 
     return NextResponse.json({ ok: true, challengeId: challenge.id });
   } catch (err) {

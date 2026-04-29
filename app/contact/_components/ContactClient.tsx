@@ -40,6 +40,7 @@ export default function ContactClient() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [complaintId, setComplaintId] = useState('');
+  const [trackingCode, setTrackingCode] = useState('');
   const [loading, setLoading] = useState(false);
 
   const validate = () => {
@@ -111,6 +112,7 @@ export default function ContactClient() {
       }
 
       setComplaintId(data.complaintId?.toString() || '');
+      setTrackingCode(data.trackingCode || '');
       setSubmitted(true);
     } catch {
       setErrors({ general: 'Something went wrong. Please try again.' });
@@ -176,7 +178,8 @@ export default function ContactClient() {
               </div>
               <h3 className="subheading-rhythm font-bold text-xl text-slate-100 mb-2">Complaint Submitted!</h3>
               <p className="copy-rhythm text-slate-400 text-sm mb-1">Your complaint has been registered successfully.</p>
-              <p className="text-sm font-semibold text-blue-200 mb-5">Complaint ID: {complaintId}</p>
+              <p className="text-sm font-semibold text-blue-200 mb-1">Complaint ID: {complaintId}</p>
+              <p className="text-sm font-semibold text-blue-200 mb-5">Tracking Code: {trackingCode}</p>
               <p className="text-xs text-slate-500">Our team will contact you within the resolution window as per your plan type.</p>
               <button
                 onClick={() => { setSubmitted(false); setForm({ issue_type: '', description: '', name: '', phone: '', email: '', address: '', city: 'Bharuch', state: 'Gujarat', pin_code: '392001' }); }}

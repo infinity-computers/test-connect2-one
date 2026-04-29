@@ -25,6 +25,7 @@ model users {
 
 model complaints {
   id                   String                @id @default(uuid()) @db.VarChar(36)
+  tracking_code        String                @unique @db.VarChar(16)
   user_id              String?               @db.VarChar(64)
   source               complaints_source     @default(AUTHENTICATED)
   reporter_name        String?               @db.VarChar(100)
@@ -120,7 +121,7 @@ model subscriptions {
 model otp_challenges {
   id           String          @id @default(uuid()) @db.VarChar(36)
   user_id      String?         @db.VarChar(64)
-  complaint_id String?        @db.VarChar(36)
+  complaint_id String?         @db.VarChar(36)
   purpose      otp_purpose
   target_type  otp_target_type
   target       String          @db.VarChar(191)

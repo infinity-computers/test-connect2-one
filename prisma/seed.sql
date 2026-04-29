@@ -82,12 +82,12 @@ VALUES
   ('pay_003', 'sub_002', 'usr_002', 6199.00, 'pay_003', 'order_003', 'failed', DATE_SUB(NOW(), INTERVAL 122 DAY));
 
 -- COMPLAINTS
-INSERT INTO complaints (user_id, source, reporter_name, reporter_phone, reporter_email, reporter_address, city, state, pin_code, issue_type, explicit_description, status)
+INSERT INTO complaints (id, tracking_code, user_id, source, reporter_name, reporter_phone, reporter_email, reporter_address, city, state, pin_code, issue_type, explicit_description, status)
 VALUES
-  ('usr_001', 'AUTHENTICATED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Internet speed', 'Connection speed drops every evening between 7 PM and 10 PM.', 'OPEN'),
-  ('usr_002', 'AUTHENTICATED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Downtime/outage', 'No internet since morning after heavy rain.', 'IN_PROGRESS'),
-  (NULL, 'GUEST', 'Karan Desai', '9974955577', 'karan.guest@example.com', 'Tavra Main Road, Bharuch', 'Bharuch', 'Gujarat', '392001', 'New connection delay', 'Requested a new connection 5 days ago and installation has not happened yet.', 'OPEN'),
-  ('usr_001', 'AUTHENTICATED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Billing error', 'Billing was corrected by support team.', 'RESOLVED');
+  ('cmp_001', 'C2O-8K4P2Q', 'usr_001', 'AUTHENTICATED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Internet_speed', 'Connection speed drops every evening between 7 PM and 10 PM.', 'OPEN'),
+  ('cmp_002', 'C2O-3L9X1R', 'usr_002', 'AUTHENTICATED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Downtime_outage', 'No internet since morning after heavy rain.', 'IN_PROGRESS'),
+  ('cmp_003', 'C2O-7N4B8M', NULL, 'GUEST', 'Karan Desai', '9974955577', 'karan.guest@example.com', 'Tavra Main Road, Bharuch', 'Bharuch', 'Gujarat', '392001', 'New_connection_delay', 'Requested a new connection 5 days ago and installation has not happened yet.', 'OPEN'),
+  ('cmp_004', 'C2O-1H6J9K', 'usr_001', 'AUTHENTICATED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Billing_error', 'Billing was corrected by support team.', 'RESOLVED');
 
 -- OTP CHALLENGES
 INSERT INTO otp_challenges (

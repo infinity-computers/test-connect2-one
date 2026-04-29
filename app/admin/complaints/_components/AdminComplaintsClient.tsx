@@ -8,6 +8,7 @@ import StatusBadge from '../../../../components/ui/StatusBadge';
 
 type Complaint = {
   id: string;
+  tracking_code: string;
   user_id: string | null;
   source: string;
   reporter_name: string | null;
@@ -304,6 +305,7 @@ export default function AdminComplaintsClient() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className="text-xs font-mono text-slate-500">#{complaint.id.slice(0, 8)}</span>
+                    <span className="text-xs font-mono text-blue-300">{complaint.tracking_code}</span>
                     <StatusBadge status={complaint.status.toLowerCase() as 'open' | 'in_progress' | 'resolved'} size="sm" />
                     <span className="text-xs text-slate-500">{new Date(complaint.created_at).toLocaleDateString('en-IN')}</span>
                   </div>
@@ -412,10 +414,11 @@ export default function AdminComplaintsClient() {
               </div>
             ) : (
               <>
-                <div className="bg-blue-900/30 border border-blue-700/60 rounded-xl px-4 py-3 mb-5">
-                  <p className="text-xs text-blue-200 font-medium mb-0.5">Sending OTP to customer email</p>
-                  <p className="text-sm font-semibold text-blue-100">{getUserEmail(otpModal.complaint)}</p>
-                </div>
+                  <div className="bg-blue-900/30 border border-blue-700/60 rounded-xl px-4 py-3 mb-5">
+                    <p className="text-xs text-blue-200 font-medium mb-0.5">Sending OTP to customer email</p>
+                    <p className="text-sm font-semibold text-blue-100">{getUserEmail(otpModal.complaint)}</p>
+                    <p className="text-xs text-blue-300 mt-1">Tracking Code: {otpModal.complaint.tracking_code}</p>
+                  </div>
 
                 <p className="copy-rhythm text-sm text-slate-300 mb-3">Enter the 6-digit OTP provided by the customer to confirm resolution:</p>
 
@@ -494,6 +497,7 @@ export default function AdminComplaintsClient() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono text-slate-500">#{detail.id.slice(0, 8)}</span>
+                  <span className="text-xs font-mono text-blue-300">{detail.tracking_code}</span>
                   <StatusBadge status={detail.status.toLowerCase() as 'open' | 'in_progress' | 'resolved'} size="sm" />
                   <span className="text-xs text-slate-500">{detail.created_at ? new Date(detail.created_at).toLocaleDateString('en-IN') : '-'}</span>
                 </div>

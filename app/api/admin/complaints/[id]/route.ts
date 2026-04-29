@@ -40,6 +40,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       ...complaint,
       created_at: safeDate(complaint.created_at),
       updated_at: safeDate(complaint.updated_at),
+      tracking_code: complaint.tracking_code,
     };
 
     return NextResponse.json({ complaint: safeComplaint });
@@ -72,6 +73,26 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
   if (!status || !["OPEN", "IN_PROGRESS", "RESOLVED"].includes(status)) {
     return NextResponse.json({ error: "Valid status is required" }, { status: 400 });
+  }
+
+  if (status === "RESOLVED" && user.role === "TECHNICIAN") {
+    const approvedOtp = await prisma.otp_challenges.findFirst({
+      where: {
+        complaint_id: id,
+        purpose: "COMPLAINT_RESOLVE",
+        consumed_at: { not: null },
+        expires_at: { gt: new Date() },
+      },
+      orderBy: { created_at: "desc" },
+      select: { id: true },
+    });
+
+    if (!approvedOtp) {
+      return NextResponse.json(
+        { error: "OTP verification required before resolving this complaint" },
+        { status: 403 }
+      );
+    }
   }
 
   try {
