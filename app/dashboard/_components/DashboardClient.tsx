@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Wifi, Calendar, Clock, DollarSign, RefreshCw, LogOut, User, Loader2 } from 'lucide-react';
+import { Wifi, Calendar, Clock, DollarSign, RefreshCw, LogOut, User, Loader2, AlertCircle, ChevronRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import StatusBadge from '../../../components/ui/StatusBadge';
@@ -38,6 +38,18 @@ type Payment = {
   };
 };
 
+type ComplaintStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+
+type Complaint = {
+  id: string;
+  tracking_code: string;
+  issue_type: string;
+  explicit_description: string | null;
+  status: ComplaintStatus;
+  created_at: string;
+  updated_at: string;
+};
+
 export default function DashboardClient() {
   const router = useRouter();
   const { user, logout } = useAuth();
@@ -49,6 +61,10 @@ export default function DashboardClient() {
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [complaintsLoading, setComplaintsLoading] = useState(true);
+  const [complaintFilter, setComplaintFilter] = useState<'all' | ComplaintStatus>('all');
+  const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -59,16 +75,20 @@ export default function DashboardClient() {
           fetch('/api/subscriptions/me'),
           fetch('/api/payments/me')
         ]);
+        const complaintRes = await fetch('/api/complaints');
 
         const subData = await subRes.json();
         const payData = await payRes.json();
+        const complaintData = await complaintRes.json();
 
         setSubscription(subData.subscription);
         setPayments(payData.payments || []);
+        setComplaints(complaintData.complaints || []);
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
       } finally {
         setLoading(false);
+        setComplaintsLoading(false);
       }
     };
 
@@ -92,6 +112,17 @@ export default function DashboardClient() {
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+  };
+
+  const filteredComplaints = complaintFilter === 'all'
+    ? complaints
+    : complaints.filter(c => c.status === complaintFilter);
+
+  const complaintCounts = {
+    all: complaints.length,
+    OPEN: complaints.filter(c => c.status === 'OPEN').length,
+    IN_PROGRESS: complaints.filter(c => c.status === 'IN_PROGRESS').length,
+    RESOLVED: complaints.filter(c => c.status === 'RESOLVED').length,
   };
 
   if (loading) {
@@ -131,6 +162,77 @@ export default function DashboardClient() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+        {/* Complaint Summary */}
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="subheading-rhythm text-lg font-bold text-slate-100">My Complaints</h2>
+            <button onClick={() => onNavigate('/contact')} className="btn-primary px-4 py-2 text-sm">Raise Complaint</button>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+            {[
+              { label: 'All', value: complaintCounts.all, key: 'all' },
+              { label: 'Open', value: complaintCounts.OPEN, key: 'OPEN' },
+              { label: 'In Progress', value: complaintCounts.IN_PROGRESS, key: 'IN_PROGRESS' },
+              { label: 'Resolved', value: complaintCounts.RESOLVED, key: 'RESOLVED' },
+            ].map(item => (
+              <button
+                key={item.key}
+                onClick={() => setComplaintFilter(item.key as 'all' | ComplaintStatus)}
+                className={`rounded-xl border p-4 text-left transition-colors ${complaintFilter === item.key ? 'bg-blue-900/30 border-blue-700/60' : 'bg-slate-900 border-slate-800 hover:border-slate-700'}`}
+              >
+                <p className="text-xs text-slate-400 mb-1">{item.label}</p>
+                <p className="text-xl font-bold text-slate-100">{item.value}</p>
+              </button>
+            ))}
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-4">
+            {(['all', 'OPEN', 'IN_PROGRESS', 'RESOLVED'] as const).map(tab => (
+              <button
+                key={tab}
+                onClick={() => setComplaintFilter(tab)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${complaintFilter === tab ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-300 border border-slate-800'}`}
+              >
+                {tab === 'all' ? 'All' : tab === 'OPEN' ? 'Open' : tab === 'IN_PROGRESS' ? 'In Progress' : 'Resolved'}
+              </button>
+            ))}
+          </div>
+
+          {complaintsLoading ? (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">Loading complaints...</div>
+          ) : filteredComplaints.length === 0 ? (
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
+              No complaints found.
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-3">
+              {filteredComplaints.map(complaint => (
+                <button
+                  key={complaint.id}
+                  onClick={() => setSelectedComplaint(complaint)}
+                  className="w-full text-left bg-slate-900 border border-slate-800 rounded-2xl p-4 hover:border-slate-700 transition-colors"
+                >
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1 flex-wrap">
+                        <AlertCircle size={14} className="text-blue-300" />
+                        <p className="text-sm font-semibold text-slate-100 truncate">{complaint.tracking_code}</p>
+                        <StatusBadge status={complaint.status.toLowerCase() as 'open' | 'in_progress' | 'resolved'} size="sm" />
+                      </div>
+                      <p className="text-xs text-slate-400">{complaint.issue_type.replace(/_/g, ' ')}</p>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-400">
+                      <span>{formatDate(complaint.created_at)}</span>
+                      <ChevronRight size={14} />
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Active Subscription */}
         <div>
           <h2 className="subheading-rhythm text-lg font-bold text-slate-100 mb-4">Active Subscription</h2>
@@ -234,6 +336,45 @@ export default function DashboardClient() {
           </div>
         </div>
       </div>
+
+      {selectedComplaint && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="bg-slate-900 rounded-3xl shadow-2xl p-6 w-full max-w-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="subheading-rhythm text-lg font-bold text-slate-100">Complaint Details</h3>
+              <button onClick={() => setSelectedComplaint(null)} className="text-slate-500 hover:text-slate-300">
+                <span className="sr-only">Close</span>
+                ×
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Tracking Code</p>
+                <p className="text-sm font-semibold text-slate-100">{selectedComplaint.tracking_code}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Issue Type</p>
+                <p className="text-sm text-slate-200">{selectedComplaint.issue_type.replace(/_/g, ' ')}</p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Status</p>
+                <StatusBadge status={selectedComplaint.status.toLowerCase() as 'open' | 'in_progress' | 'resolved'} size="sm" />
+              </div>
+              {selectedComplaint.explicit_description && (
+                <div>
+                  <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Description</p>
+                  <p className="text-sm text-slate-300">{selectedComplaint.explicit_description}</p>
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-3 text-sm text-slate-300">
+                <div><p className="text-xs text-slate-500">Submitted</p>{formatDate(selectedComplaint.created_at)}</div>
+                <div><p className="text-xs text-slate-500">Updated</p>{formatDate(selectedComplaint.updated_at)}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
