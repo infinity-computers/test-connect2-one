@@ -1,9 +1,23 @@
 "use client";
 
-import { useState, useEffect } from 'react';
-import { Users, Wifi, XCircle, DollarSign, Bell, LogOut, Search, Loader2, MessageSquare, UserPlus, Eye, EyeOff, X } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '../../../../context/AuthContext';
+import { useState, useEffect } from "react";
+import {
+  Users,
+  Wifi,
+  XCircle,
+  DollarSign,
+  Bell,
+  LogOut,
+  Search,
+  Loader2,
+  MessageSquare,
+  UserPlus,
+  Eye,
+  EyeOff,
+  X,
+} from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "../../../../context/AuthContext";
 
 type ApiUser = {
   id: string;
@@ -36,33 +50,33 @@ export default function AdminDashboardClient() {
   const { user, logout } = useAuth();
   const onNavigate = (path: string) => {
     router.push(path);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<ApiUser[]>([]);
   const [complaints, setComplaints] = useState<ApiComplaint[]>([]);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [showAlerts, setShowAlerts] = useState(false);
   const [showAddUser, setShowAddUser] = useState(false);
   const [savingUser, setSavingUser] = useState(false);
-  const [addUserError, setAddUserError] = useState('');
+  const [addUserError, setAddUserError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [newUser, setNewUser] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    role: 'USER',
-    auth_type: 'PASSWORD',
-    password: '',
+    name: "",
+    email: "",
+    phone: "",
+    role: "USER",
+    auth_type: "PASSWORD",
+    password: "",
   });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [usersRes, complaintsRes] = await Promise.all([
-          fetch('/api/admin/users'),
-          fetch('/api/admin/complaints')
+          fetch("/api/admin/users"),
+          fetch("/api/admin/complaints"),
         ]);
 
         const usersData = await usersRes.json();
@@ -71,54 +85,62 @@ export default function AdminDashboardClient() {
         setUsers(usersData.users || []);
         setComplaints(complaintsData.complaints || []);
       } catch (err) {
-        console.error('Failed to fetch admin data:', err);
+        console.error("Failed to fetch admin data:", err);
       } finally {
         setLoading(false);
       }
     };
 
-    if (user && (user.role === 'ADMIN' || user.role === 'TECHNICIAN')) {
+    if (user && (user.role === "ADMIN" || user.role === "TECHNICIAN")) {
       fetchData();
     }
   }, [user]);
 
   const handleCreateUser = async () => {
-    setAddUserError('');
+    setAddUserError("");
     if (!newUser.name.trim() || !newUser.email.trim()) {
-      setAddUserError('Name and email are required.');
+      setAddUserError("Name and email are required.");
       return;
     }
-    if (newUser.auth_type === 'PASSWORD' && !newUser.password) {
-      setAddUserError('Password is required for PASSWORD auth.');
+    if (newUser.auth_type === "PASSWORD" && !newUser.password) {
+      setAddUserError("Password is required for PASSWORD auth.");
       return;
     }
 
     setSavingUser(true);
     try {
-      const res = await fetch('/api/admin/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+      const res = await fetch("/api/admin/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: newUser.name.trim(),
           email: newUser.email.trim().toLowerCase(),
           phone: newUser.phone.trim() || null,
           role: newUser.role,
           auth_type: newUser.auth_type,
-          password: newUser.auth_type === 'PASSWORD' ? newUser.password : undefined,
-        })
+          password:
+            newUser.auth_type === "PASSWORD" ? newUser.password : undefined,
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setAddUserError(data.error || 'Failed to create user');
+        setAddUserError(data.error || "Failed to create user");
         return;
       }
 
-      setUsers(prev => [data.user, ...prev]);
+      setUsers((prev) => [data.user, ...prev]);
       setShowAddUser(false);
-      setNewUser({ name: '', email: '', phone: '', role: 'USER', auth_type: 'PASSWORD', password: '' });
+      setNewUser({
+        name: "",
+        email: "",
+        phone: "",
+        role: "USER",
+        auth_type: "PASSWORD",
+        password: "",
+      });
       setShowPassword(false);
     } catch {
-      setAddUserError('Failed to create user');
+      setAddUserError("Failed to create user");
     } finally {
       setSavingUser(false);
     }
@@ -126,24 +148,37 @@ export default function AdminDashboardClient() {
 
   const kpi: KpiStats = {
     totalUsers: users.length,
-    activePlans: complaints.filter(c => c.status === 'OPEN' || c.status === 'IN_PROGRESS').length,
+    activePlans: complaints.filter(
+      (c) => c.status === "OPEN" || c.status === "IN_PROGRESS",
+    ).length,
     expiredPlans: 0,
     totalRevenue: 0,
   };
 
-  const openComplaints = complaints.filter(c => c.status === 'OPEN');
-  const filtered = users.filter(u =>
-    u.name.toLowerCase().includes(search.toLowerCase()) ||
-    u.email.toLowerCase().includes(search.toLowerCase()) ||
-    (u.phone && u.phone.includes(search))
-  );
+  const openComplaints = complaints.filter((c) => c.status === "OPEN");
+  const filtered = users.filter((u) => {
+    const name = (u.name ?? "").toLowerCase();
+    const email = (u.email ?? "").toLowerCase();
+    const phone = u.phone ?? "";
 
-  if (!user || (user.role !== 'ADMIN' && user.role !== 'TECHNICIAN')) {
+    const query = search.toLowerCase();
+
+    return (
+      name.includes(query) || email.includes(query) || phone.includes(search)
+    );
+  });
+
+  if (!user || (user.role !== "ADMIN" && user.role !== "TECHNICIAN")) {
     return (
       <div className="pt-16 min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center px-4">
           <p className="text-slate-300 mb-4">Admin access required.</p>
-          <button onClick={() => onNavigate('/login')} className="btn-primary px-5 py-2.5">Admin Login</button>
+          <button
+            onClick={() => onNavigate("/login")}
+            className="btn-primary px-5 py-2.5"
+          >
+            Admin Login
+          </button>
         </div>
       </div>
     );
@@ -165,11 +200,15 @@ export default function AdminDashboardClient() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="min-w-0">
               <p className="text-slate-300 text-xs mb-1">Admin Portal</p>
-              <h1 className="subheading-rhythm text-2xl font-bold">Dashboard</h1>
-              <p className="text-slate-500 text-sm mt-0.5">Welcome, {user.name}</p>
+              <h1 className="subheading-rhythm text-2xl font-bold">
+                Dashboard
+              </h1>
+              <p className="text-slate-500 text-sm mt-0.5">
+                Welcome, {user.name}
+              </p>
             </div>
             <div className="flex flex-wrap items-stretch gap-2 sm:gap-3 sm:items-center sm:justify-end">
-              {user.role === 'ADMIN' && (
+              {user.role === "ADMIN" && (
                 <button
                   onClick={() => setShowAddUser(true)}
                   className="flex w-full sm:w-auto items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 border border-emerald-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
@@ -179,7 +218,7 @@ export default function AdminDashboardClient() {
                 </button>
               )}
               <button
-                onClick={() => onNavigate('/admin/complaints')}
+                onClick={() => onNavigate("/admin/complaints")}
                 className="flex w-full sm:w-auto items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
               >
                 <MessageSquare size={16} />
@@ -200,16 +239,35 @@ export default function AdminDashboardClient() {
                 {showAlerts && (
                   <div className="absolute right-0 top-12 w-[calc(100vw-2rem)] sm:w-72 bg-slate-900 rounded-2xl shadow-xl border border-slate-800 z-50 overflow-hidden">
                     <div className="px-4 py-3 bg-slate-950 border-b border-slate-800">
-                      <p className="text-sm font-semibold text-slate-100">Open Complaints ({openComplaints.length})</p>
+                      <p className="text-sm font-semibold text-slate-100">
+                        Open Complaints ({openComplaints.length})
+                      </p>
                     </div>
-                    {openComplaints.slice(0, 5).map(c => (
-                      <div key={c.id} className="px-4 py-3 border-b border-slate-800 hover:bg-slate-950 cursor-pointer" onClick={() => { onNavigate('/admin/complaints'); setShowAlerts(false); }}>
-                        <p className="text-xs font-semibold text-slate-100">#{c.id} – {c.issue_type?.replace(/_/g, ' ')}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">{c.users?.name || c.reporter_name || 'Guest'}</p>
+                    {openComplaints.slice(0, 5).map((c) => (
+                      <div
+                        key={c.id}
+                        className="px-4 py-3 border-b border-slate-800 hover:bg-slate-950 cursor-pointer"
+                        onClick={() => {
+                          onNavigate("/admin/complaints");
+                          setShowAlerts(false);
+                        }}
+                      >
+                        <p className="text-xs font-semibold text-slate-100">
+                          #{c.id} – {c.issue_type?.replace(/_/g, " ")}
+                        </p>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          {c.users?.name || c.reporter_name || "Guest"}
+                        </p>
                       </div>
                     ))}
                     <div className="px-4 py-3 text-center">
-                      <button onClick={() => { onNavigate('/admin/complaints'); setShowAlerts(false); }} className="text-xs text-link font-semibold">
+                      <button
+                        onClick={() => {
+                          onNavigate("/admin/complaints");
+                          setShowAlerts(false);
+                        }}
+                        className="text-xs text-link font-semibold"
+                      >
                         View all complaints
                       </button>
                     </div>
@@ -217,7 +275,10 @@ export default function AdminDashboardClient() {
                 )}
               </div>
               <button
-                onClick={() => { logout(); onNavigate('/'); }}
+                onClick={() => {
+                  logout();
+                  onNavigate("/");
+                }}
                 className="flex w-full sm:w-auto items-center justify-center gap-2 bg-slate-800/50 hover:bg-slate-800/70 border border-slate-600 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
               >
                 <LogOut size={14} /> Sign Out
@@ -231,17 +292,46 @@ export default function AdminDashboardClient() {
         {/* KPI Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
           {[
-            { icon: Users, label: 'Total Users', value: kpi.totalUsers.toLocaleString(), color: 'text-blue-200 bg-blue-900/40', change: 'All time' },
-            { icon: Wifi, label: 'Active Plans', value: kpi.activePlans.toLocaleString(), color: 'text-emerald-200 bg-emerald-900/30', change: 'Current' },
-            { icon: XCircle, label: 'Open Complaints', value: openComplaints.length.toString(), color: 'text-red-200 bg-red-900/30', change: 'Needs attention' },
-            { icon: DollarSign, label: 'Total Revenue', value: '₹0', color: 'text-blue-300 bg-blue-900/40', change: 'This year' },
+            {
+              icon: Users,
+              label: "Total Users",
+              value: kpi.totalUsers.toLocaleString(),
+              color: "text-blue-200 bg-blue-900/40",
+              change: "All time",
+            },
+            {
+              icon: Wifi,
+              label: "Active Plans",
+              value: kpi.activePlans.toLocaleString(),
+              color: "text-emerald-200 bg-emerald-900/30",
+              change: "Current",
+            },
+            {
+              icon: XCircle,
+              label: "Open Complaints",
+              value: openComplaints.length.toString(),
+              color: "text-red-200 bg-red-900/30",
+              change: "Needs attention",
+            },
+            {
+              icon: DollarSign,
+              label: "Total Revenue",
+              value: "₹0",
+              color: "text-blue-300 bg-blue-900/40",
+              change: "This year",
+            },
           ].map(({ icon: Icon, label, value, color, change }) => (
-            <div key={label} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow">
+            <div
+              key={label}
+              className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm hover:shadow-md transition-shadow"
+            >
               <div className={`inline-flex p-2.5 rounded-xl mb-3 ${color}`}>
                 <Icon size={18} />
               </div>
               <p className="text-2xl font-bold text-slate-100">{value}</p>
-              <p className="text-xs text-slate-400 font-medium mt-0.5">{label}</p>
+              <p className="text-xs text-slate-400 font-medium mt-0.5">
+                {label}
+              </p>
               <p className="text-xs text-slate-500 mt-1">{change}</p>
             </div>
           ))}
@@ -250,14 +340,19 @@ export default function AdminDashboardClient() {
         {/* Users Table */}
         <div>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
-            <h2 className="subheading-rhythm text-lg font-bold text-slate-100">All Users</h2>
+            <h2 className="subheading-rhythm text-lg font-bold text-slate-100">
+              All Users
+            </h2>
             <div className="relative">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <Search
+                size={15}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500"
+              />
               <input
                 type="text"
                 placeholder="Search users..."
                 value={search}
-                onChange={e => setSearch(e.target.value)}
+                onChange={(e) => setSearch(e.target.value)}
                 className="input-dark pl-9 py-2 w-full sm:w-56"
               />
             </div>
@@ -265,26 +360,53 @@ export default function AdminDashboardClient() {
 
           <div className="bg-slate-900 border border-slate-800 rounded-2xl shadow-sm overflow-hidden">
             {filtered.length === 0 ? (
-              <div className="text-center py-8 text-slate-500 text-sm">No users found.</div>
+              <div className="text-center py-8 text-slate-500 text-sm">
+                No users found.
+              </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[720px] text-sm">
                   <thead className="bg-slate-950 border-b border-slate-800">
                     <tr>
-                      {['ID', 'Name', 'Email', 'Phone', 'Role', 'Auth Type'].map(h => (
-                        <th key={h} className="text-left px-4 py-3 text-xs text-slate-400 font-semibold uppercase tracking-wide whitespace-nowrap">{h}</th>
+                      {[
+                        "ID",
+                        "Name",
+                        "Email",
+                        "Phone",
+                        "Role",
+                        "Auth Type",
+                      ].map((h) => (
+                        <th
+                          key={h}
+                          className="text-left px-4 py-3 text-xs text-slate-400 font-semibold uppercase tracking-wide whitespace-nowrap"
+                        >
+                          {h}
+                        </th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-800">
-                    {filtered.map(u => (
-                      <tr key={u.id} className="hover:bg-slate-950 transition-colors">
-                        <td className="px-4 py-3.5 text-slate-500 text-xs font-mono">{u.id}</td>
-                        <td className="px-4 py-3.5 font-medium text-slate-100 whitespace-nowrap">{u.name}</td>
-                        <td className="px-4 py-3.5 text-slate-300 whitespace-nowrap">{u.email}</td>
-                        <td className="px-4 py-3.5 text-slate-300">{u.phone || '-'}</td>
+                    {filtered.map((u) => (
+                      <tr
+                        key={u.id}
+                        className="hover:bg-slate-950 transition-colors"
+                      >
+                        <td className="px-4 py-3.5 text-slate-500 text-xs font-mono">
+                          {u.id}
+                        </td>
+                        <td className="px-4 py-3.5 font-medium text-slate-100 whitespace-nowrap">
+                          {u.name}
+                        </td>
+                        <td className="px-4 py-3.5 text-slate-300 whitespace-nowrap">
+                          {u.email}
+                        </td>
+                        <td className="px-4 py-3.5 text-slate-300">
+                          {u.phone || "-"}
+                        </td>
                         <td className="px-4 py-3.5 text-slate-300">{u.role}</td>
-                        <td className="px-4 py-3.5 text-slate-300">{u.auth_type}</td>
+                        <td className="px-4 py-3.5 text-slate-300">
+                          {u.auth_type}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -299,9 +421,14 @@ export default function AdminDashboardClient() {
         <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/50 px-4 py-4 overflow-y-auto">
           <div className="bg-slate-900 rounded-3xl shadow-2xl p-5 sm:p-8 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="subheading-rhythm text-lg font-bold text-slate-100">Add User</h3>
+              <h3 className="subheading-rhythm text-lg font-bold text-slate-100">
+                Add User
+              </h3>
               <button
-                onClick={() => { setShowAddUser(false); setAddUserError(''); }}
+                onClick={() => {
+                  setShowAddUser(false);
+                  setAddUserError("");
+                }}
                 className="text-slate-500 hover:text-slate-300 p-1"
               >
                 <X size={18} />
@@ -311,21 +438,29 @@ export default function AdminDashboardClient() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">Name</label>
+                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">
+                    Name
+                  </label>
                   <input
                     type="text"
                     value={newUser.name}
-                    onChange={e => setNewUser(prev => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) =>
+                      setNewUser((prev) => ({ ...prev, name: e.target.value }))
+                    }
                     className="input-dark py-2.5"
                     placeholder="Full name"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">Email</label>
+                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">
+                    Email
+                  </label>
                   <input
                     type="email"
                     value={newUser.email}
-                    onChange={e => setNewUser(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) =>
+                      setNewUser((prev) => ({ ...prev, email: e.target.value }))
+                    }
                     className="input-dark py-2.5"
                     placeholder="email@domain.com"
                   />
@@ -334,20 +469,28 @@ export default function AdminDashboardClient() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">Phone</label>
+                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">
+                    Phone
+                  </label>
                   <input
                     type="tel"
                     value={newUser.phone}
-                    onChange={e => setNewUser(prev => ({ ...prev, phone: e.target.value }))}
+                    onChange={(e) =>
+                      setNewUser((prev) => ({ ...prev, phone: e.target.value }))
+                    }
                     className="input-dark py-2.5"
                     placeholder="99749 55542"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">Role</label>
+                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">
+                    Role
+                  </label>
                   <select
                     value={newUser.role}
-                    onChange={e => setNewUser(prev => ({ ...prev, role: e.target.value }))}
+                    onChange={(e) =>
+                      setNewUser((prev) => ({ ...prev, role: e.target.value }))
+                    }
                     className="input-dark py-2.5"
                   >
                     <option value="USER">User</option>
@@ -359,10 +502,17 @@ export default function AdminDashboardClient() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">Auth Type</label>
+                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">
+                    Auth Type
+                  </label>
                   <select
                     value={newUser.auth_type}
-                    onChange={e => setNewUser(prev => ({ ...prev, auth_type: e.target.value }))}
+                    onChange={(e) =>
+                      setNewUser((prev) => ({
+                        ...prev,
+                        auth_type: e.target.value,
+                      }))
+                    }
                     className="input-dark py-2.5"
                   >
                     <option value="PASSWORD">Password</option>
@@ -370,23 +520,38 @@ export default function AdminDashboardClient() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">Password</label>
+                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">
+                    Password
+                  </label>
                   <div className="relative">
                     <input
-                      type={showPassword ? 'text' : 'password'}
+                      type={showPassword ? "text" : "password"}
                       value={newUser.password}
-                      onChange={e => setNewUser(prev => ({ ...prev, password: e.target.value }))}
+                      onChange={(e) =>
+                        setNewUser((prev) => ({
+                          ...prev,
+                          password: e.target.value,
+                        }))
+                      }
                       className="input-dark py-2.5 pr-10"
-                      placeholder={newUser.auth_type === 'OTP' ? 'Not required' : 'Set password'}
-                      disabled={newUser.auth_type === 'OTP'}
+                      placeholder={
+                        newUser.auth_type === "OTP"
+                          ? "Not required"
+                          : "Set password"
+                      }
+                      disabled={newUser.auth_type === "OTP"}
                     />
-                    {newUser.auth_type === 'PASSWORD' && (
+                    {newUser.auth_type === "PASSWORD" && (
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                       >
-                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                        {showPassword ? (
+                          <EyeOff size={16} />
+                        ) : (
+                          <Eye size={16} />
+                        )}
                       </button>
                     )}
                   </div>
@@ -401,7 +566,10 @@ export default function AdminDashboardClient() {
 
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <button
-                  onClick={() => { setShowAddUser(false); setAddUserError(''); }}
+                  onClick={() => {
+                    setShowAddUser(false);
+                    setAddUserError("");
+                  }}
                   className="flex-1 border border-slate-700 text-slate-200 font-semibold py-2.5 rounded-xl transition-colors"
                 >
                   Cancel
@@ -411,8 +579,12 @@ export default function AdminDashboardClient() {
                   disabled={savingUser}
                   className="btn-primary flex-1 py-2.5 flex items-center justify-center gap-2 disabled:opacity-60"
                 >
-                  {savingUser ? <Loader2 size={16} className="animate-spin" /> : <UserPlus size={16} />}
-                  {savingUser ? 'Creating...' : 'Create User'}
+                  {savingUser ? (
+                    <Loader2 size={16} className="animate-spin" />
+                  ) : (
+                    <UserPlus size={16} />
+                  )}
+                  {savingUser ? "Creating..." : "Create User"}
                 </button>
               </div>
             </div>
