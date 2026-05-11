@@ -38,6 +38,15 @@ type ApiComplaint = {
   reporter_name: string | null;
 };
 
+type ApiNotification = {
+  id: string;
+  title: string;
+  description: string;
+  expires_at: string;
+  created_at: string;
+  updated_at: string;
+};
+
 type KpiStats = {
   totalUsers: number;
   activePlans: number;
@@ -56,11 +65,15 @@ export default function AdminDashboardClient() {
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<ApiUser[]>([]);
   const [complaints, setComplaints] = useState<ApiComplaint[]>([]);
+  const [notifications, setNotifications] = useState<ApiNotification[]>([]);
   const [search, setSearch] = useState("");
   const [showAlerts, setShowAlerts] = useState(false);
   const [showAddUser, setShowAddUser] = useState(false);
+  const [showNotificationForm, setShowNotificationForm] = useState(false);
   const [savingUser, setSavingUser] = useState(false);
+  const [savingNotification, setSavingNotification] = useState(false);
   const [addUserError, setAddUserError] = useState("");
+  const [notificationError, setNotificationError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [newUser, setNewUser] = useState({
     name: "",
@@ -70,20 +83,32 @@ export default function AdminDashboardClient() {
     auth_type: "PASSWORD",
     password: "",
   });
+  const [newNotification, setNewNotification] = useState({
+    title: "",
+    description: "",
+    expiresAt: (() => {
+      const date = new Date(Date.now() + 60 * 60 * 1000);
+      const offset = date.getTimezoneOffset() * 60000;
+      return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+    })(),
+  });
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [usersRes, complaintsRes] = await Promise.all([
+        const [usersRes, complaintsRes, notificationsRes] = await Promise.all([
           fetch("/api/admin/users"),
           fetch("/api/admin/complaints"),
+          fetch("/api/admin/notifications"),
         ]);
 
         const usersData = await usersRes.json();
         const complaintsData = await complaintsRes.json();
+        const notificationsData = await notificationsRes.json();
 
         setUsers(usersData.users || []);
         setComplaints(complaintsData.complaints || []);
+        setNotifications(notificationsData.notifications || []);
       } catch (err) {
         console.error("Failed to fetch admin data:", err);
       } finally {
@@ -146,6 +171,50 @@ export default function AdminDashboardClient() {
     }
   };
 
+  const handleCreateNotification = async () => {
+    setNotificationError("");
+
+    if (!newNotification.title.trim() || !newNotification.description.trim() || !newNotification.expiresAt) {
+      setNotificationError("Title, description, and expiry are required.");
+      return;
+    }
+
+    setSavingNotification(true);
+    try {
+      const res = await fetch("/api/admin/notifications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: newNotification.title.trim(),
+          description: newNotification.description.trim(),
+          expiresAt: new Date(newNotification.expiresAt).toISOString(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setNotificationError(data.error || "Failed to create notification");
+        return;
+      }
+
+      setNotifications((prev) => [data.notification, ...prev]);
+      setNewNotification({
+        title: "",
+        description: "",
+        expiresAt: (() => {
+          const date = new Date(Date.now() + 60 * 60 * 1000);
+          const offset = date.getTimezoneOffset() * 60000;
+          return new Date(date.getTime() - offset).toISOString().slice(0, 16);
+        })(),
+      });
+      setShowNotificationForm(false);
+    } catch {
+      setNotificationError("Failed to create notification");
+    } finally {
+      setSavingNotification(false);
+    }
+  };
+
   const kpi: KpiStats = {
     totalUsers: users.length,
     activePlans: complaints.filter(
@@ -167,6 +236,9 @@ export default function AdminDashboardClient() {
       name.includes(query) || email.includes(query) || phone.includes(search)
     );
   });
+  const activeNotifications = notifications.filter(
+    (notification) => new Date(notification.expires_at).getTime() > Date.now(),
+  );
 
   if (!user || (user.role !== "ADMIN" && user.role !== "TECHNICIAN")) {
     return (
@@ -335,6 +407,127 @@ export default function AdminDashboardClient() {
               <p className="text-xs text-slate-500 mt-1">{change}</p>
             </div>
           ))}
+        </div>
+
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between mb-4">
+            <div>
+              <h2 className="subheading-rhythm text-lg font-bold text-slate-100">
+                Sitewide Notifications
+              </h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Visible to every user until expiry.
+              </p>
+            </div>
+            {user.role === "ADMIN" && (
+              <button
+                onClick={() => setShowNotificationForm((prev) => !prev)}
+                className="btn-primary px-4 py-2 text-sm rounded-xl"
+              >
+                {showNotificationForm ? "Close" : "New Notification"}
+              </button>
+            )}
+          </div>
+
+          {user.role === "ADMIN" && showNotificationForm && (
+            <div className="mb-5 rounded-2xl border border-slate-800 bg-slate-950/60 p-4 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">
+                    Title
+                  </label>
+                  <input
+                    type="text"
+                    value={newNotification.title}
+                    onChange={(e) =>
+                      setNewNotification((prev) => ({ ...prev, title: e.target.value }))
+                    }
+                    className="input-dark py-2.5"
+                    placeholder="ISP outage"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-slate-200 mb-1.5">
+                    Expires At
+                  </label>
+                  <input
+                    type="datetime-local"
+                    value={newNotification.expiresAt}
+                    onChange={(e) =>
+                      setNewNotification((prev) => ({ ...prev, expiresAt: e.target.value }))
+                    }
+                    className="input-dark py-2.5"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-200 mb-1.5">
+                  Description
+                </label>
+                <textarea
+                  value={newNotification.description}
+                  onChange={(e) =>
+                    setNewNotification((prev) => ({ ...prev, description: e.target.value }))
+                  }
+                  className="input-dark min-h-28 py-2.5"
+                  placeholder="Internet service is currently down. Work is in progress."
+                />
+              </div>
+
+              {notificationError && (
+                <p className="text-sm text-red-200 bg-red-900/30 border border-red-700/60 rounded-lg px-3 py-2">
+                  {notificationError}
+                </p>
+              )}
+
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => {
+                    setShowNotificationForm(false);
+                    setNotificationError("");
+                  }}
+                  className="flex-1 border border-slate-700 text-slate-200 font-semibold py-2.5 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCreateNotification}
+                  disabled={savingNotification}
+                  className="btn-primary flex-1 py-2.5 disabled:opacity-60"
+                >
+                  {savingNotification ? "Creating..." : "Create Notification"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-3">
+            {activeNotifications.length === 0 ? (
+              <div className="text-center py-6 text-slate-500 text-sm border border-dashed border-slate-800 rounded-2xl">
+                No active notifications.
+              </div>
+            ) : (
+              activeNotifications.map((notification) => (
+                <div
+                  key={notification.id}
+                  className="rounded-2xl border border-amber-400/20 bg-amber-500/5 px-4 py-3"
+                >
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                    <div>
+                      <p className="font-semibold text-slate-100">{notification.title}</p>
+                      <p className="text-sm text-slate-300 mt-1 whitespace-pre-line">
+                        {notification.description}
+                      </p>
+                    </div>
+                    <p className="text-xs text-slate-500 sm:pl-6 sm:pt-1 whitespace-nowrap">
+                      Expires {new Date(notification.expires_at).toLocaleString("en-IN")}
+                    </p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
 
         {/* Users Table */}

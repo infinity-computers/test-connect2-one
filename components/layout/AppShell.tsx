@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import Navbar from "./Navbar";
 import Footer from "./Footer";
+import SiteNotificationsBanner from "./SiteNotificationsBanner";
 // import DevToggle from "./DevToggle";
 
 const ADMIN_PATH_PREFIX = "/admin";
@@ -26,14 +27,14 @@ export default function AppShell({ children }: AppShellProps) {
 
   const isAdminPath = pathname.startsWith(ADMIN_PATH_PREFIX);
   const showLayout = !NO_LAYOUT_PATHS.has(pathname) && !isAdminPath;
+  const showNavbar = showLayout || isAdminPath;
   const showFooter =
     showLayout && pathname !== "/dashboard" && pathname !== "/my-subscriptions";
 
   return (
     <div className="min-h-screen flex flex-col">
-      {(showLayout || isAdminPath) && (
-        <Navbar currentPath={pathname} onNavigate={onNavigate} />
-      )}
+      {showNavbar && <Navbar currentPath={pathname} onNavigate={onNavigate} />}
+      <SiteNotificationsBanner hasNavbar={showNavbar} />
       <main className="flex-1">{children}</main>
       {showFooter && <Footer onNavigate={onNavigate} />}
       {/* <DevToggle onNavigate={onNavigate} /> */}

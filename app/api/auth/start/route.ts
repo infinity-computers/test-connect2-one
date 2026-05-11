@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const userFound = await prisma.users.findUnique({ where: { email } });
+    const userFound = await prisma.users.findFirst({ where: { email } });
 
     if (!userFound) {
       return invalidCredentials();

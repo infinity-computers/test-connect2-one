@@ -176,7 +176,7 @@ export async function POST(req: NextRequest) {
         where: { role: "ADMIN" },
         select: { email: true },
       });
-      const adminEmails = [...new Set(adminUsers.map((admin) => admin.email).filter(Boolean))];
+      const adminEmails = [...new Set(adminUsers.map((admin) => admin.email).filter((email): email is string => typeof email === "string" && email.length > 0))];
 
       sendComplaintEmails({
         complaintId: complaint.id,
@@ -220,7 +220,7 @@ export async function POST(req: NextRequest) {
         where: { role: "ADMIN" },
         select: { email: true },
       });
-      const adminEmails = [...new Set(adminUsers.map((admin) => admin.email).filter(Boolean))];
+      const adminEmails = [...new Set(adminUsers.map((admin) => admin.email).filter((email): email is string => typeof email === "string" && email.length > 0))];
 
       sendComplaintEmails({
         complaintId: complaint.id,

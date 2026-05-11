@@ -9,38 +9,41 @@ datasource db {
 
 model users {
   id             String           @id @default(uuid()) @db.VarChar(64)
-  name           String           @db.VarChar(100)
-  email          String           @unique(map: "uk_users_email") @db.VarChar(150)
-  phone          String?          @unique(map: "uk_users_phone") @db.VarChar(20)
+  name           String?          @db.VarChar(100)
+  email          String?          @db.VarChar(255)
+  phone          String?          @db.VarChar(20)
   password       String?          @db.VarChar(255)
   role           ROLE             @default(USER)
   auth_type      users_auth_type  @default(PASSWORD)
+  status         String?          @db.VarChar(20)
+  created_at     DateTime?        @default(now()) @db.Timestamp(0)
+  updated_at     DateTime?        @default(now()) @db.Timestamp(0)
   complaints     complaints[]
+  otp_challenges otp_challenges[]
   payments       payments[]
   subscriptions  subscriptions[]
-  otp_challenges otp_challenges[]
 
   @@index([role], map: "idx_users_role")
 }
 
 model complaints {
   id                   String                @id @default(uuid()) @db.VarChar(36)
-  tracking_code        String                @unique @db.VarChar(16)
   user_id              String?               @db.VarChar(64)
   source               complaints_source     @default(AUTHENTICATED)
   reporter_name        String?               @db.VarChar(100)
   reporter_phone       String?               @db.VarChar(20)
   reporter_email       String?               @db.VarChar(150)
   reporter_address     String?               @db.Text
-  city                 String?               @db.VarChar(100)
-  state                String?               @db.VarChar(100)
-  pin_code             String?               @db.VarChar(20)
   issue_type           complaints_issue_type
   explicit_description String?               @db.Text
   status               complaints_status     @default(OPEN)
   created_at           DateTime              @default(now()) @db.Timestamp(0)
   updated_at           DateTime              @default(now()) @updatedAt @db.Timestamp(0)
-  users                users?                @relation(fields: [user_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_complaint_user")
+  city                 String?               @db.VarChar(100)
+  state                String?               @db.VarChar(100)
+  pin_code             String?               @db.VarChar(20)
+  tracking_code        String                @unique @db.VarChar(16)
+  users                users?                @relation(fields: [user_id], references: [id], onUpdate: Restrict, map: "fk_complaint_user")
   otp_challenges       otp_challenges[]
 
   @@index([user_id], map: "idx_complaints_user_id")
@@ -124,7 +127,7 @@ model otp_challenges {
   complaint_id String?         @db.VarChar(36)
   purpose      otp_purpose
   target_type  otp_target_type
-  target       String          @db.VarChar(191)
+  target       String
   otp_hash     String          @db.VarChar(255)
   attempts     Int             @default(0)
   max_attempts Int             @default(5)
@@ -133,13 +136,24 @@ model otp_challenges {
   request_ip   String?         @db.VarChar(45)
   user_agent   String?         @db.VarChar(255)
   created_at   DateTime        @default(now()) @db.Timestamp(0)
-  users        users?          @relation(fields: [user_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "fk_otp_user")
   complaints   complaints?     @relation(fields: [complaint_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "fk_otp_complaint")
+  users        users?          @relation(fields: [user_id], references: [id], onUpdate: Restrict, map: "fk_otp_user")
 
   @@index([target, purpose, expires_at], map: "idx_otp_target_purpose_expires")
   @@index([user_id, purpose], map: "idx_otp_user_purpose")
   @@index([complaint_id, purpose], map: "idx_otp_complaint_purpose")
   @@index([expires_at], map: "idx_otp_expires")
+}
+
+model site_notifications {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  title       String   @db.VarChar(150)
+  description String   @db.Text
+  expires_at  DateTime @db.Timestamp(0)
+  created_at  DateTime @default(now()) @db.Timestamp(0)
+  updated_at  DateTime @updatedAt @db.Timestamp(0)
+
+  @@index([expires_at], map: "idx_site_notifications_expires_at")
 }
 
 enum ROLE {
