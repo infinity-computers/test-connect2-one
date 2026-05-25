@@ -48,6 +48,12 @@ type Complaint = {
   status: ComplaintStatus;
   created_at: string;
   updated_at: string;
+  assigned_technician?: {
+    id: string;
+    name: string | null;
+    email: string | null;
+    phone: string | null;
+  } | null;
 };
 
 export default function DashboardClient() {
@@ -221,6 +227,11 @@ export default function DashboardClient() {
                         <StatusBadge status={complaint.status.toLowerCase() as 'open' | 'in_progress' | 'resolved'} size="sm" />
                       </div>
                       <p className="text-xs text-slate-400">{complaint.issue_type.replace(/_/g, ' ')}</p>
+                      {complaint.assigned_technician && (
+                        <p className="text-xs text-amber-300 mt-1">
+                          Technician: {complaint.assigned_technician.name || complaint.assigned_technician.email || 'Assigned'}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-400">
                       <span>{formatDate(complaint.created_at)}</span>
@@ -370,6 +381,14 @@ export default function DashboardClient() {
               <div className="grid grid-cols-2 gap-3 text-sm text-slate-300">
                 <div><p className="text-xs text-slate-500">Submitted</p>{formatDate(selectedComplaint.created_at)}</div>
                 <div><p className="text-xs text-slate-500">Updated</p>{formatDate(selectedComplaint.updated_at)}</div>
+                {selectedComplaint.assigned_technician && (
+                  <div className="sm:col-span-2">
+                    <p className="text-xs text-slate-500">Technician</p>
+                    <p className="text-sm text-amber-300">
+                      {selectedComplaint.assigned_technician.name || selectedComplaint.assigned_technician.email || 'Assigned'}
+                    </p>
+                  </div>
+                )}
               </div>
             </div>
           </div>

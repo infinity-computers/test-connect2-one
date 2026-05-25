@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { getCurrentUser } from "../../../../lib/auth-token";
 import { complaints_status } from "../../../../generated/prisma/enums";
+import { ensureComplaintReminderScheduler } from "../../../../lib/complaint-reminder";
 
 export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
+  ensureComplaintReminderScheduler();
+
   const user = await getCurrentUser(req);
 
   if (!user || (user.role !== "ADMIN" && user.role !== "TECHNICIAN")) {
@@ -24,6 +27,9 @@ export async function GET(req: NextRequest) {
       include: {
         users: {
           select: { name: true, email: true, phone: true },
+        },
+        assigned_technician: {
+          select: { id: true, name: true, email: true, phone: true },
         },
       },
     });

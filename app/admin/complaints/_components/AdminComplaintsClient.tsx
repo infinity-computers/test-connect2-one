@@ -24,6 +24,8 @@ type Complaint = {
   created_at: string;
   updated_at: string;
   users: { name: string; email: string; phone: string } | null;
+  assigned_technician: { id: string; name: string | null; email: string | null; phone: string | null } | null;
+  assigned_at?: string | null;
 };
 
 type ComplaintDetail = Complaint & {
@@ -240,6 +242,7 @@ export default function AdminComplaintsClient() {
   const getUserName = (c: Complaint) => c.users?.name || c.reporter_name || 'Guest';
   const getUserEmail = (c: Complaint) => c.users?.email || c.reporter_email || '-';
   const getUserPhone = (c: Complaint) => c.users?.phone || c.reporter_phone || '-';
+  const getAssignedTech = (c: Complaint) => c.assigned_technician?.name || c.assigned_technician?.email || '-';
 
   const tabs: { value: FilterTab; label: string; icon: typeof CheckCircle }[] = [
     { value: 'all', label: 'All', icon: AlertCircle },
@@ -317,6 +320,7 @@ export default function AdminComplaintsClient() {
                     <span className="font-medium text-slate-200">{getUserName(complaint)}</span>
                     <span>{getUserEmail(complaint)}</span>
                     <span>{getUserPhone(complaint)}</span>
+                    <span className="text-amber-300">Assigned: {getAssignedTech(complaint)}</span>
                   </div>
                 </div>
 
@@ -505,6 +509,11 @@ export default function AdminComplaintsClient() {
                 <div>
                   <p className="text-xs text-slate-500 uppercase tracking-wide">Issue Type</p>
                   <p className="text-sm text-slate-100 font-semibold">{detail.issue_type?.replace(/_/g, ' ')}</p>
+                </div>
+
+                <div>
+                  <p className="text-xs text-slate-500 uppercase tracking-wide">Assigned Technician</p>
+                  <p className="text-sm text-amber-200 font-medium">{detail.assigned_technician?.name || detail.assigned_technician?.email || '-'}</p>
                 </div>
 
                 {detail.explicit_description && (

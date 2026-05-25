@@ -18,7 +18,8 @@ model users {
   status         String?
   created_at     DateTime?        @default(now())
   updated_at     DateTime?        @default(now())
-  complaints     complaints[]
+  complaints     complaints[]     @relation("UserComplaints")
+  assigned_complaints complaints[] @relation("TechnicianAssignments")
   otp_challenges otp_challenges[]
   payments       payments[]
   subscriptions  subscriptions[]
@@ -27,26 +28,33 @@ model users {
 }
 
 model complaints {
-  id                   String                @id @default(uuid())
-  user_id              String?
-  source               complaints_source     @default(AUTHENTICATED)
-  reporter_name        String?
-  reporter_phone       String?
-  reporter_email       String?
-  reporter_address     String?
-  issue_type           complaints_issue_type
-  explicit_description String?
-  status               complaints_status     @default(OPEN)
-  created_at           DateTime              @default(now())
-  updated_at           DateTime              @default(now()) @updatedAt
-  city                 String?
-  state                String?
-  pin_code             String?
-  tracking_code        String                @unique
-  users                users?                @relation(fields: [user_id], references: [id], onUpdate: Restrict, map: "fk_complaint_user")
-  otp_challenges       otp_challenges[]
+  id                     String                @id @default(uuid())
+  user_id                String?
+  assigned_technician_id String?
+  source                 complaints_source     @default(AUTHENTICATED)
+  reporter_name          String?
+  reporter_phone         String?
+  reporter_email         String?
+  reporter_address       String?
+  issue_type             complaints_issue_type
+  explicit_description   String?
+  status                 complaints_status     @default(OPEN)
+  created_at             DateTime              @default(now())
+  updated_at             DateTime              @default(now()) @updatedAt
+  city                   String?
+  state                  String?
+  pin_code               String?
+  assigned_at            DateTime?
+  reminder_enabled       Boolean               @default(false)
+  last_reminder_sent_at  DateTime?
+  tracking_code          String                @unique
+  users                  users?                @relation("UserComplaints", fields: [user_id], references: [id], onUpdate: Restrict, map: "fk_complaint_user")
+  assigned_technician    users?                @relation("TechnicianAssignments", fields: [assigned_technician_id], references: [id], onUpdate: Restrict, map: "fk_complaint_assigned_technician")
+  otp_challenges         otp_challenges[]
 
   @@index([user_id], map: "idx_complaints_user_id")
+  @@index([assigned_technician_id, status], map: "idx_complaints_assigned_status")
+  @@index([reminder_enabled, status, last_reminder_sent_at], map: "idx_complaints_reminder_due")
   @@index([status, created_at], map: "idx_complaints_status_created")
   @@index([source, created_at], map: "idx_complaints_source_created")
   @@index([reporter_phone], map: "idx_complaints_reporter_phone")

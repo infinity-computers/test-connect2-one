@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { prisma } from "../../../lib/prisma";
 import { getCurrentUser } from "../../../lib/auth-token";
+import { ensureComplaintReminderScheduler } from "../../../lib/complaint-reminder";
 import { complaints_issue_type } from "../../../generated/prisma/enums";
 
 export const runtime = "nodejs";
@@ -117,6 +118,7 @@ async function sendComplaintEmails(options: {
 }
 
 export async function GET(req: NextRequest) {
+  ensureComplaintReminderScheduler();
   const user = await getCurrentUser(req);
   
   if (!user) {
@@ -132,6 +134,9 @@ export async function GET(req: NextRequest) {
       include: {
         users: {
           select: { name: true, email: true, phone: true },
+        },
+        assigned_technician: {
+          select: { id: true, name: true, email: true, phone: true },
         },
       },
     });
