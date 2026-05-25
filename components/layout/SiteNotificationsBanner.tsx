@@ -76,7 +76,7 @@ export default function SiteNotificationsBanner({ hasNavbar }: SiteNotifications
           <div className="relative min-w-0 flex-1 overflow-hidden">
             <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-cyan-950/85 to-transparent" />
             <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-cyan-950/85 to-transparent" />
-            <div className="flex w-max gap-12 whitespace-nowrap text-sm text-cyan-100 motion-safe:animate-[notification-ticker_42s_linear_infinite] hover:[animation-play-state:paused]">
+            <div className="flex w-max gap-12 whitespace-nowrap text-sm text-cyan-100 motion-safe:animate-[notification-ticker_24s_linear_infinite] hover:[animation-play-state:paused]">
               <span>{tickerText}</span>
               <span aria-hidden="true">{tickerText}</span>
             </div>
