@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { BellRing } from "lucide-react";
 
 type SiteNotification = {
@@ -52,45 +52,39 @@ export default function SiteNotificationsBanner({ hasNavbar }: SiteNotifications
     };
   }, []);
 
-  if (!loaded || notifications.length === 0) {
+  const tickerText = useMemo(() => {
+    return notifications
+      .map((n) => `${n.title}: ${n.description}`)
+      .join("   •   ");
+  }, [notifications]);
+
+  if (!loaded || notifications.length === 0 || !tickerText) {
     return null;
   }
 
-  const scrollingNotifications = [...notifications, ...notifications];
-
   return (
     <div
-      className={`${hasNavbar ? "sticky top-16 z-40" : "relative z-40"} bg-slate-950/95 backdrop-blur-sm`}
+      className={`${hasNavbar ? "sticky top-16 z-40" : "relative z-40"} border-b border-cyan-900/50 bg-cyan-950/85`}
       role="status"
       aria-live="polite"
     >
-      <div className="max-w-7xl mx-auto border-b border-slate-800/70">
-        <div className="overflow-hidden px-4 py-3 sm:px-6 lg:px-8">
-          <div
-            className="flex w-max items-stretch gap-3 motion-safe:animate-[scroll-notifications_55s_linear_infinite] hover:[animation-play-state:paused]"
-            aria-label="Site notifications"
-          >
-            {scrollingNotifications.map((notification, idx) => (
-              <div
-                key={`${notification.id}-${idx}`}
-                className="flex min-w-[320px] max-w-[440px] flex-none gap-3 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-3 shadow-sm"
-              >
-                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-900/30 text-cyan-200">
-                  <BellRing size={14} />
-                </div>
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold text-slate-100">{notification.title}</p>
-                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-300">
-                    {notification.description}
-                  </p>
-                </div>
-              </div>
-            ))}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center gap-3 py-2.5">
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-cyan-900/40 text-cyan-200">
+            <BellRing size={13} />
+          </div>
+          <div className="relative min-w-0 flex-1 overflow-hidden">
+            <div className="pointer-events-none absolute inset-y-0 left-0 w-6 bg-gradient-to-r from-cyan-950/85 to-transparent" />
+            <div className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-cyan-950/85 to-transparent" />
+            <div className="flex w-max gap-12 whitespace-nowrap text-sm text-cyan-100 motion-safe:animate-[notification-ticker_42s_linear_infinite] hover:[animation-play-state:paused]">
+              <span>{tickerText}</span>
+              <span aria-hidden="true">{tickerText}</span>
+            </div>
           </div>
         </div>
       </div>
       <style jsx>{`
-        @keyframes scroll-notifications {
+        @keyframes notification-ticker {
           0% {
             transform: translateX(0);
           }
