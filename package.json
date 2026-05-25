@@ -12,7 +12,7 @@
     "seed": "prisma db execute --file prisma/seed.sql"
   },
   "dependencies": {
-    "@prisma/adapter-mariadb": "^7.7.0",
+    "@prisma/adapter-pg": "^7.8.0",
     "@prisma/client": "^7.7.0",
     "@supabase/supabase-js": "^2.57.4",
     "bcryptjs": "^3.0.3",
@@ -20,6 +20,7 @@
     "lucide-react": "^0.344.0",
     "next": "^14.2.25",
     "nodemailer": "^8.0.5",
+    "pg": "^8.21.0",
     "razorpay": "^2.9.6",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
