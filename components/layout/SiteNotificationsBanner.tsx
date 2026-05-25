@@ -56,34 +56,49 @@ export default function SiteNotificationsBanner({ hasNavbar }: SiteNotifications
     return null;
   }
 
+  const scrollingNotifications = [...notifications, ...notifications];
+
   return (
     <div
       className={`${hasNavbar ? "sticky top-16 z-40" : "relative z-40"} bg-slate-950/95 backdrop-blur-sm`}
       role="status"
       aria-live="polite"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3 space-y-2 border-b border-slate-800/70">
-        {notifications.map((notification) => {
-          return (
-            <div
-              key={notification.id}
-              className="flex flex-col gap-3 rounded-2xl border border-slate-800 bg-slate-900/70 px-4 py-3 shadow-sm sm:flex-row sm:items-start sm:justify-between"
-            >
-              <div className="flex gap-3">
-                <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-900/30 text-blue-200">
-                  <BellRing size={16} />
+      <div className="max-w-7xl mx-auto border-b border-slate-800/70">
+        <div className="overflow-hidden px-4 py-3 sm:px-6 lg:px-8">
+          <div
+            className="flex w-max items-stretch gap-3 motion-safe:animate-[scroll-notifications_55s_linear_infinite] hover:[animation-play-state:paused]"
+            aria-label="Site notifications"
+          >
+            {scrollingNotifications.map((notification, idx) => (
+              <div
+                key={`${notification.id}-${idx}`}
+                className="flex min-w-[320px] max-w-[440px] flex-none gap-3 rounded-xl border border-slate-800 bg-slate-900/80 px-4 py-3 shadow-sm"
+              >
+                <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-cyan-900/30 text-cyan-200">
+                  <BellRing size={14} />
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-100">{notification.title}</p>
-                  <p className="mt-1 text-sm leading-6 text-slate-200 whitespace-pre-line">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-slate-100">{notification.title}</p>
+                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-slate-300">
                     {notification.description}
                   </p>
                 </div>
               </div>
-            </div>
-          );
-        })}
+            ))}
+          </div>
+        </div>
       </div>
+      <style jsx>{`
+        @keyframes scroll-notifications {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+      `}</style>
     </div>
   );
 }
