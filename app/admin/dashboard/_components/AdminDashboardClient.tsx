@@ -26,6 +26,7 @@ type ApiUser = {
   phone: string | null;
   role: string;
   auth_type: string;
+  status: string | null;
 };
 
 type ApiComplaint = {
@@ -49,8 +50,8 @@ type ApiNotification = {
 
 type KpiStats = {
   totalUsers: number;
-  activePlans: number;
-  expiredPlans: number;
+  activeUsers: number;
+  openComplaints: number;
   totalRevenue: number;
 };
 
@@ -217,10 +218,8 @@ export default function AdminDashboardClient() {
 
   const kpi: KpiStats = {
     totalUsers: users.length,
-    activePlans: complaints.filter(
-      (c) => c.status === "OPEN" || c.status === "IN_PROGRESS",
-    ).length,
-    expiredPlans: 0,
+    activeUsers: users.filter((u) => (u.status || "").toLowerCase() === "active").length,
+    openComplaints: complaints.filter((c) => c.status === "OPEN").length,
     totalRevenue: 0,
   };
 
@@ -373,15 +372,15 @@ export default function AdminDashboardClient() {
             },
             {
               icon: Wifi,
-              label: "Active Plans",
-              value: kpi.activePlans.toLocaleString(),
+              label: "Active Users",
+              value: kpi.activeUsers.toLocaleString(),
               color: "text-emerald-200 bg-emerald-900/30",
               change: "Current",
             },
             {
               icon: XCircle,
               label: "Open Complaints",
-              value: openComplaints.length.toString(),
+              value: kpi.openComplaints.toString(),
               color: "text-red-200 bg-red-900/30",
               change: "Needs attention",
             },
@@ -568,6 +567,7 @@ export default function AdminDashboardClient() {
                         "Phone",
                         "Role",
                         "Auth Type",
+                        "Status",
                       ].map((h) => (
                         <th
                           key={h}
@@ -599,6 +599,9 @@ export default function AdminDashboardClient() {
                         <td className="px-4 py-3.5 text-slate-300">{u.role}</td>
                         <td className="px-4 py-3.5 text-slate-300">
                           {u.auth_type}
+                        </td>
+                        <td className="px-4 py-3.5 text-slate-300">
+                          {(u.status || "-").toUpperCase()}
                         </td>
                       </tr>
                     ))}

@@ -22,6 +22,7 @@ export async function GET(req: NextRequest) {
         phone: true,
         role: true,
         auth_type: true,
+        status: true,
       },
       orderBy: { email: "asc" },
     });
@@ -90,6 +91,7 @@ export async function POST(req: NextRequest) {
         phone: true,
         role: true,
         auth_type: true,
+        status: true,
       },
     });
 
