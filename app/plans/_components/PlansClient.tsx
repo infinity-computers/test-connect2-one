@@ -5,9 +5,6 @@ import { Zap, Star, Check, Tv, Gift } from "lucide-react";
 import { plans, PlanCategory } from "../../../data/mockPlans";
 import { ottPlans } from "../../../data/mockOTT";
 
-const SERVICE_FORM_URL =
-  "https://forms.zohopublic.in/careconne1/form/OrderdeliveryTracking/formperma/ewKtAuFFvOwEDh2PKjscv9RcFz3ILa0aiWOx3Lu3vC8?Policy_Acceptance=Accepted%20on%206%20Mar%202026%2C%202%3A20%20pm";
-
 const categoryInfo: Record<
   PlanCategory,
   { desc: string; color: string; tag: string }
@@ -34,6 +31,7 @@ export default function PlansClient() {
   const [selectedDuration, setSelectedDuration] = useState<"3m" | "6m" | "12m">(
     "12m",
   );
+  const [showConnectionModal, setShowConnectionModal] = useState(false);
 
   const filtered = plans.filter((p) => p.category === activeCategory);
   const durationLabels = {
@@ -190,14 +188,12 @@ export default function PlansClient() {
                       </li>
                     ))}
                   </ul>
-                  <a
-                    href={SERVICE_FORM_URL}
-                    target="_blank"
-                    rel="noreferrer"
-                    className={`block text-center py-2.5 rounded-xl text-sm font-semibold transition-colors ${isPopular ? "bg-blue-500 hover:bg-blue-600 text-white" : "border-2 border-slate-700 hover:border-blue-500 text-slate-200 hover:text-blue-300"}`}
-                  >
+                  <button
+                    type="button"
+                    onClick={() => setShowConnectionModal(true)}
+                    className={` block text-center py-2.5 rounded-xl text-sm font-semibold transition-colors`}>
                     Get Started
-                  </a>
+                  </button>
                 </div>
               </div>
             );
@@ -228,7 +224,7 @@ export default function PlansClient() {
           {ottPlans.map((plan) => (
             <div
               key={plan.id}
-              className="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300"
+              className="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col h-full min-h-[20rem] md:min-h-[24rem]"
             >
               <div className="flex items-center gap-2 mb-1">
                 <Tv size={14} className="text-blue-500" />
@@ -262,17 +258,36 @@ export default function PlansClient() {
                   </div>
                 ))}
               </div>
-              <a
-                href={SERVICE_FORM_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-4 block text-center py-2 rounded-xl text-sm font-semibold border-2 border-blue-700/60 text-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors"
+              <button
+                type="button"
+                onClick={() => setShowConnectionModal(true)}
+                className="mt-auto pt-4 block w-full text-center py-2 rounded-xl text-sm font-semibold border-2 border-blue-700/60 text-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors"
               >
                 Add to Plan
-              </a>
+              </button>
             </div>
           ))}
         </div>
+            {showConnectionModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
+          <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
+            <h3 className="text-lg font-bold text-slate-100 mb-2">New Connection / Upgrade</h3>
+            <p className="text-sm text-slate-300 mb-4">Please contact us for new connections and plan upgrades.</p>
+            <p className="text-cyan-300 font-semibold text-lg mb-1">99749 55542</p>
+            <p className="text-xs text-slate-400 mb-5">New connections & upgrades</p>
+            <div className="flex gap-3">
+              <a href="tel:+919974955542" className="btn-primary flex-1 text-center py-2.5">Call Now</a>
+              <button
+                type="button"
+                onClick={() => setShowConnectionModal(false)}
+                className="flex-1 rounded-xl border border-slate-700 py-2.5 text-sm font-semibold text-slate-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   );
