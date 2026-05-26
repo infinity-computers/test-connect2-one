@@ -35,28 +35,6 @@ async function sendOtpEmail(email: string, otp: string) {
     subject: "Your Connect One login OTP",
     text: `Your OTP is ${otp}. It expires in ${OTP_EXPIRY_MINUTES} minutes.`,
   });
-
-  // Previous SMTP-based sender kept for reference.
-  // const host = process.env.SMTP_HOST;
-  // const port = Number(process.env.SMTP_PORT || "587");
-  // const user = process.env.SMTP_USER;
-  // const pass = process.env.SMTP_PASS;
-  // const from = process.env.SMTP_FROM || user;
-  // if (!host || !user || !pass || !from) {
-  //   throw new Error("SMTP configuration is missing");
-  // }
-  // const smtpTransporter = nodemailer.createTransport({
-  //   host,
-  //   port,
-  //   secure: port === 465,
-  //   auth: { user, pass },
-  // });
-  // await smtpTransporter.sendMail({
-  //   from,
-  //   to: email,
-  //   subject: "Your Connect One login OTP",
-  //   text: `Your OTP is ${otp}. It expires in ${OTP_EXPIRY_MINUTES} minutes.`,
-  // });
 }
 
 export async function POST(req: NextRequest) {
@@ -74,14 +52,16 @@ export async function POST(req: NextRequest) {
       return invalidCredentials();
     }
 
-    if (userFound.auth_type === "PASSWORD") {
+    // USER logins are now phone-match based.
+    if (userFound.role === "USER") {
       return NextResponse.json({
         ok: true,
-        nextStep: "password",
+        nextStep: "phone",
         email,
       });
     }
 
+    // Staff login remains OTP based.
     if (userFound.auth_type !== "OTP") {
       return invalidCredentials();
     }

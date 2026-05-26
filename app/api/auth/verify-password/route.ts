@@ -1,4 +1,3 @@
-import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
@@ -13,14 +12,18 @@ function normalizeEmail(value: unknown): string {
   return typeof value === "string" ? value.trim().toLowerCase() : "";
 }
 
+function normalizePhone(value: unknown): string {
+  return typeof value === "string" ? value.trim() : "";
+}
+
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const email = normalizeEmail(body?.email);
-  const password = typeof body?.password === "string" ? body.password.trim() : "";
+  const phone = normalizePhone(body?.phone);
 
-  if (!email || !password) {
+  if (!email || !phone) {
     return NextResponse.json(
-      { error: "Email and password are required" },
+      { error: "Email and phone are required" },
       { status: 400 },
     );
   }
@@ -34,21 +37,14 @@ export async function POST(req: NextRequest) {
         email: true,
         phone: true,
         role: true,
-        auth_type: true,
-        password: true,
       },
     });
 
-    if (!userFound) {
+    if (!userFound || userFound.role !== "USER") {
       return invalidCredentials();
     }
 
-    if (userFound.auth_type !== "PASSWORD" || !userFound.password) {
-      return invalidCredentials();
-    }
-
-    const isPasswordValid = await bcrypt.compare(password, userFound.password);
-    if (!isPasswordValid) {
+    if (!userFound.phone || userFound.phone.trim() !== phone) {
       return invalidCredentials();
     }
 
