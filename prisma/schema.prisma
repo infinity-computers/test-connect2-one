@@ -38,7 +38,7 @@ model complaints {
   reporter_address       String?
   issue_type             complaints_issue_type
   explicit_description   String?
-  status                 complaints_status     @default(OPEN)
+  status                 complaints_status     @default(PENDING_APPROVAL)
   created_at             DateTime              @default(now())
   updated_at             DateTime              @default(now()) @updatedAt
   city                   String?
@@ -184,9 +184,11 @@ enum complaints_issue_type {
 }
 
 enum complaints_status {
+  PENDING_APPROVAL
   OPEN
   IN_PROGRESS
   RESOLVED
+  REJECTED
 }
 
 enum complaints_source {

@@ -38,7 +38,7 @@ type Payment = {
   };
 };
 
-type ComplaintStatus = 'OPEN' | 'IN_PROGRESS' | 'RESOLVED';
+type ComplaintStatus = 'PENDING_APPROVAL' | 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED';
 
 type Complaint = {
   id: string;
@@ -126,9 +126,11 @@ export default function DashboardClient() {
 
   const complaintCounts = {
     all: complaints.length,
+    PENDING_APPROVAL: complaints.filter(c => c.status === 'PENDING_APPROVAL').length,
     OPEN: complaints.filter(c => c.status === 'OPEN').length,
     IN_PROGRESS: complaints.filter(c => c.status === 'IN_PROGRESS').length,
     RESOLVED: complaints.filter(c => c.status === 'RESOLVED').length,
+    REJECTED: complaints.filter(c => c.status === 'REJECTED').length,
   };
 
   if (loading) {
@@ -194,13 +196,13 @@ export default function DashboardClient() {
           </div>
 
           <div className="flex flex-wrap gap-2 mb-4">
-            {(['all', 'OPEN', 'IN_PROGRESS', 'RESOLVED'] as const).map(tab => (
+            {(['all', 'PENDING_APPROVAL', 'OPEN', 'IN_PROGRESS', 'RESOLVED', 'REJECTED'] as const).map(tab => (
               <button
                 key={tab}
                 onClick={() => setComplaintFilter(tab)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${complaintFilter === tab ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-300 border border-slate-800'}`}
               >
-                {tab === 'all' ? 'All' : tab === 'OPEN' ? 'Open' : tab === 'IN_PROGRESS' ? 'In Progress' : 'Resolved'}
+                {tab === 'all' ? 'All' : tab === 'PENDING_APPROVAL' ? 'Pending Approval' : tab === 'OPEN' ? 'Open' : tab === 'IN_PROGRESS' ? 'In Progress' : tab === 'REJECTED' ? 'Rejected' : 'Resolved'}
               </button>
             ))}
           </div>
@@ -224,7 +226,7 @@ export default function DashboardClient() {
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <AlertCircle size={14} className="text-blue-300" />
                         <p className="text-sm font-semibold text-slate-100 truncate">{complaint.tracking_code}</p>
-                        <StatusBadge status={complaint.status.toLowerCase() as 'open' | 'in_progress' | 'resolved'} size="sm" />
+                        <StatusBadge status={complaint.status.toLowerCase() as 'pending_approval' | 'open' | 'in_progress' | 'resolved' | 'rejected'} size="sm" />
                       </div>
                       <p className="text-xs text-slate-400">{complaint.issue_type.replace(/_/g, ' ')}</p>
                       {complaint.assigned_technician && (
@@ -370,7 +372,7 @@ export default function DashboardClient() {
               </div>
               <div>
                 <p className="text-xs text-slate-500 uppercase tracking-wide mb-1">Status</p>
-                <StatusBadge status={selectedComplaint.status.toLowerCase() as 'open' | 'in_progress' | 'resolved'} size="sm" />
+                <StatusBadge status={selectedComplaint.status.toLowerCase() as 'pending_approval' | 'open' | 'in_progress' | 'resolved' | 'rejected'} size="sm" />
               </div>
               {selectedComplaint.explicit_description && (
                 <div>
