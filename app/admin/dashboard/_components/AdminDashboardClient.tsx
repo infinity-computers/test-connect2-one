@@ -65,7 +65,7 @@ export default function AdminDashboardClient() {
 
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<ApiUser[]>([]);
-  const [complaints, setComplaints] = useState<ApiComplaint[]>([]);
+  const [tickets, setComplaints] = useState<ApiComplaint[]>([]);
   const [notifications, setNotifications] = useState<ApiNotification[]>([]);
   const [search, setSearch] = useState("");
   const [showAlerts, setShowAlerts] = useState(false);
@@ -99,7 +99,7 @@ export default function AdminDashboardClient() {
       try {
         const [usersRes, complaintsRes, notificationsRes] = await Promise.all([
           fetch("/api/admin/users"),
-          fetch("/api/admin/complaints"),
+          fetch("/api/admin/tickets"),
           fetch("/api/admin/notifications"),
         ]);
 
@@ -108,7 +108,7 @@ export default function AdminDashboardClient() {
         const notificationsData = await notificationsRes.json();
 
         setUsers(usersData.users || []);
-        setComplaints(complaintsData.complaints || []);
+        setComplaints(complaintsData.tickets || []);
         setNotifications(notificationsData.notifications || []);
       } catch (err) {
         console.error("Failed to fetch admin data:", err);
@@ -219,11 +219,11 @@ export default function AdminDashboardClient() {
   const kpi: KpiStats = {
     totalUsers: users.length,
     activeUsers: users.filter((u) => (u.status || "").toLowerCase() === "active").length,
-    openComplaints: complaints.filter((c) => c.status === "OPEN").length,
+    openComplaints: tickets.filter((c) => c.status === "OPEN").length,
     totalRevenue: 0,
   };
 
-  const openComplaints = complaints.filter((c) => c.status === "OPEN");
+  const openComplaints = tickets.filter((c) => c.status === "OPEN");
   const filtered = users.filter((u) => {
     const name = (u.name ?? "").toLowerCase();
     const email = (u.email ?? "").toLowerCase();
@@ -289,7 +289,7 @@ export default function AdminDashboardClient() {
                 </button>
               )}
               <button
-                onClick={() => onNavigate("/admin/complaints")}
+                onClick={() => onNavigate("/admin/tickets")}
                 className="flex w-full sm:w-auto items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 border border-blue-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
               >
                 <MessageSquare size={16} />
@@ -319,7 +319,7 @@ export default function AdminDashboardClient() {
                         key={c.id}
                         className="px-4 py-3 border-b border-slate-800 hover:bg-slate-950 cursor-pointer"
                         onClick={() => {
-                          onNavigate("/admin/complaints");
+                          onNavigate("/admin/tickets");
                           setShowAlerts(false);
                         }}
                       >
@@ -334,12 +334,12 @@ export default function AdminDashboardClient() {
                     <div className="px-4 py-3 text-center">
                       <button
                         onClick={() => {
-                          onNavigate("/admin/complaints");
+                          onNavigate("/admin/tickets");
                           setShowAlerts(false);
                         }}
                         className="text-xs text-link font-semibold"
                       >
-                        View all complaints
+                        View all tickets
                       </button>
                     </div>
                   </div>

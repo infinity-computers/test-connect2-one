@@ -37,12 +37,12 @@ async function sendReminderEmail(to: string, payload: {
   await transporter.sendMail({
     from: "no-reply@connect2one.in",
     to,
-    subject: `Reminder: Complaint ${payload.trackingCode} is still in progress`,
+    subject: `Reminder: Ticket ${payload.trackingCode} is still in progress`,
     text: [
       "Hi,",
       "",
-      "This is an hourly reminder for a complaint currently assigned to you.",
-      `Complaint ID: ${payload.complaintId}`,
+      "This is an hourly reminder for a ticket currently assigned to you.",
+      `Ticket ID: ${payload.complaintId}`,
       `Tracking Code: ${payload.trackingCode}`,
       `Issue Type: ${payload.issueType}`,
       `Assigned At: ${assignedAtText}`,
@@ -59,7 +59,7 @@ async function sendReminderEmail(to: string, payload: {
 async function runReminderSweep() {
   const now = new Date();
 
-  const complaints = await prisma.complaints.findMany({
+  const tickets = await prisma.tickets.findMany({
     where: {
       status: "IN_PROGRESS",
       reminder_enabled: true,
@@ -79,35 +79,35 @@ async function runReminderSweep() {
     },
   });
 
-  for (const complaint of complaints) {
-    if (!isDue(complaint.last_reminder_sent_at, now)) {
+  for (const ticket of tickets) {
+    if (!isDue(ticket.last_reminder_sent_at, now)) {
       continue;
     }
 
-    const technicianEmail = complaint.assigned_technician?.email?.trim();
+    const technicianEmail = ticket.assigned_technician?.email?.trim();
     if (!technicianEmail) {
       continue;
     }
 
     try {
       await sendReminderEmail(technicianEmail, {
-        complaintId: complaint.id,
-        trackingCode: complaint.tracking_code,
-        issueType: complaint.issue_type,
-        assignedAt: complaint.assigned_at,
+        complaintId: ticket.id,
+        trackingCode: ticket.tracking_code,
+        issueType: ticket.issue_type,
+        assignedAt: ticket.assigned_at,
       });
 
-      await prisma.complaints.update({
-        where: { id: complaint.id },
+      await prisma.tickets.update({
+        where: { id: ticket.id },
         data: { last_reminder_sent_at: now },
       });
     } catch (err) {
-      console.error("complaint reminder send failed:", err);
+      console.error("ticket reminder send failed:", err);
     }
   }
 }
 
-export function ensureComplaintReminderScheduler() {
+export function ensureTicketReminderScheduler() {
   if (process.env.NODE_ENV === "test") return;
   if (reminderGlobal.reminderIntervalStarted) return;
 
@@ -115,7 +115,7 @@ export function ensureComplaintReminderScheduler() {
 
   setInterval(() => {
     runReminderSweep().catch((err) => {
-      console.error("complaint reminder sweep failed:", err);
+      console.error("ticket reminder sweep failed:", err);
     });
   }, CHECK_EVERY_MS);
 }

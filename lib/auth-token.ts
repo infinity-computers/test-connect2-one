@@ -39,6 +39,6 @@ export async function getCurrentUser(req: NextRequest): Promise<AuthTokenPayload
 
 export function roleToRedirect(role: AuthRole): string {
   if (role === "ADMIN") return "/admin/dashboard";
-  if (role === "TECHNICIAN") return "/admin/complaints";
+  if (role === "TECHNICIAN") return "/admin/tickets";
   return "/dashboard";
 }

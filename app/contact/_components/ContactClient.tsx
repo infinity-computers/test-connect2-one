@@ -98,7 +98,7 @@ export default function ContactClient() {
         payload.pin_code = form.pin_code;
       }
 
-      const res = await fetch('/api/complaints', {
+      const res = await fetch('/api/tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -106,7 +106,7 @@ export default function ContactClient() {
       const data = await res.json();
 
       if (!res.ok) {
-        setErrors({ general: data.error || 'Failed to submit complaint' });
+        setErrors({ general: data.error || 'Failed to submit ticket' });
         setLoading(false);
         return;
       }
@@ -153,18 +153,18 @@ export default function ContactClient() {
           ))}
         </div>
 
-        {/* Complaint Section */}
+        {/* Ticket Section */}
         <div className="max-w-2xl mx-auto">
-          <h2 className="subheading-rhythm text-2xl font-bold text-slate-100 mb-2">Raise a Complaint</h2>
+          <h2 className="subheading-rhythm text-2xl font-bold text-slate-100 mb-2">Raise a Ticket</h2>
           <p className="copy-rhythm text-slate-400 mb-6 text-sm">
             {user 
-              ? 'Submit a complaint and our team will respond promptly.' 
+              ? 'Submit a ticket and our team will respond promptly.' 
               : 'Fill the form below and our team will respond promptly. You may also login for faster service.'}
           </p>
 
           {!user && (
             <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-4 mb-6 flex items-center justify-between">
-              <p className="text-sm text-slate-300">Login for faster service and track your complaint</p>
+              <p className="text-sm text-slate-300">Login for faster service and track your ticket</p>
               <button onClick={() => onNavigate('/login')} className="btn-primary px-4 py-2 text-sm">
                 Sign In
               </button>
@@ -176,9 +176,9 @@ export default function ContactClient() {
               <div className="inline-flex p-4 bg-emerald-900/30 rounded-full mb-4">
                 <CheckCircle size={28} className="text-emerald-300" />
               </div>
-              <h3 className="subheading-rhythm font-bold text-xl text-slate-100 mb-2">Complaint Submitted!</h3>
-              <p className="copy-rhythm text-slate-400 text-sm mb-1">Your complaint has been registered successfully.</p>
-              <p className="text-sm font-semibold text-blue-200 mb-1">Complaint ID: {complaintId}</p>
+              <h3 className="subheading-rhythm font-bold text-xl text-slate-100 mb-2">Ticket Submitted!</h3>
+              <p className="copy-rhythm text-slate-400 text-sm mb-1">Your ticket has been registered successfully.</p>
+              <p className="text-sm font-semibold text-blue-200 mb-1">Ticket ID: {complaintId}</p>
               <p className="text-sm font-semibold text-blue-200 mb-5">Tracking Code: {trackingCode}</p>
               <p className="text-xs text-slate-500">Our team will contact you within the resolution window as per your plan type.</p>
               <button
@@ -315,7 +315,7 @@ export default function ContactClient() {
                   className="btn-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   {loading ? <Loader2 size={18} className="animate-spin" /> : <Send size={16} />}
-                  {loading ? 'Submitting...' : 'Submit Complaint'}
+                  {loading ? 'Submitting...' : 'Submit Ticket'}
                 </button>
               </form>
             </div>

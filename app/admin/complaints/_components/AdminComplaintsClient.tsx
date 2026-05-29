@@ -8,7 +8,7 @@ import StatusBadge from '../../../../components/ui/StatusBadge';
 
 type ComplaintStatus = 'PENDING_APPROVAL' | 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED';
 
-type Complaint = {
+type Ticket = {
   id: string;
   tracking_code: string;
   user_id: string | null;
@@ -30,12 +30,25 @@ type Complaint = {
   assigned_at?: string | null;
 };
 
-type ComplaintDetail = Complaint & {
+type ComplaintDetail = Ticket & {
   users: { id: string; name: string; email: string; phone: string | null } | null;
 };
 
 type Technician = { id: string; name: string | null; email: string | null; phone: string | null };
 type FilterTab = 'all' | ComplaintStatus;
+
+const issueTypes = [
+  "Internet_speed",
+  "Downtime_outage",
+  "Billing_error",
+  "Equipment_fault",
+  "New_connection_delay",
+  "Poor_signal",
+  "Not_working_more_than_4_hours",
+  "Not_working_more_than_24_hours",
+  "Not_working_more_than_48_hours",
+  "Other",
+];
 
 export default function AdminComplaintsClient() {
   const router = useRouter();
@@ -46,12 +59,12 @@ export default function AdminComplaintsClient() {
   };
 
   const [loading, setLoading] = useState(true);
-  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [tickets, setComplaints] = useState<Ticket[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [assignments, setAssignments] = useState<Record<string, string>>({});
   const [filter, setFilter] = useState<FilterTab>('all');
-  const [otpModal, setOtpModal] = useState<{ complaint: Complaint | null; sent: boolean; verified: boolean; countdown: number }>({
-    complaint: null, sent: false, verified: false, countdown: 0,
+  const [otpModal, setOtpModal] = useState<{ ticket: Ticket | null; sent: boolean; verified: boolean; countdown: number }>({
+    ticket: null, sent: false, verified: false, countdown: 0,
   });
   const [challengeId, setChallengeId] = useState<string>('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -60,17 +73,19 @@ export default function AdminComplaintsClient() {
   const [detail, setDetail] = useState<ComplaintDetail | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailError, setDetailError] = useState('');
+  const [createForm, setCreateForm] = useState({ issue_type: '', description: '', assigned_technician_id: '' });
+  const [creating, setCreating] = useState(false);
 
   useEffect(() => {
     if (!user || (user.role !== 'ADMIN' && user.role !== 'TECHNICIAN')) return;
 
     const fetchData = async () => {
       try {
-        const complaintRes = await fetch('/api/admin/complaints');
+        const complaintRes = await fetch('/api/admin/tickets');
         const complaintData = await complaintRes.json();
-        const complaintList = complaintData.complaints || [];
+        const complaintList = complaintData.tickets || [];
         setComplaints(complaintList);
-        setAssignments(Object.fromEntries(complaintList.map((c: Complaint) => [c.id, c.assigned_technician?.id || ''])));
+        setAssignments(Object.fromEntries(complaintList.map((c: Ticket) => [c.id, c.assigned_technician?.id || ''])));
 
         if (user.role === 'ADMIN') {
           const userRes = await fetch('/api/admin/users');
@@ -79,7 +94,7 @@ export default function AdminComplaintsClient() {
           setTechnicians(techList);
         }
       } catch (err) {
-        console.error('Failed to fetch complaints:', err);
+        console.error('Failed to fetch tickets:', err);
       } finally {
         setLoading(false);
       }
@@ -107,18 +122,18 @@ export default function AdminComplaintsClient() {
     );
   }
 
-  const filtered = filter === 'all' ? complaints : complaints.filter(c => c.status === filter);
+  const filtered = filter === 'all' ? tickets : tickets.filter(c => c.status === filter);
 
   const tabCounts: Record<FilterTab, number> = {
-    all: complaints.length,
-    PENDING_APPROVAL: complaints.filter(c => c.status === 'PENDING_APPROVAL').length,
-    OPEN: complaints.filter(c => c.status === 'OPEN').length,
-    IN_PROGRESS: complaints.filter(c => c.status === 'IN_PROGRESS').length,
-    RESOLVED: complaints.filter(c => c.status === 'RESOLVED').length,
-    REJECTED: complaints.filter(c => c.status === 'REJECTED').length,
+    all: tickets.length,
+    PENDING_APPROVAL: tickets.filter(c => c.status === 'PENDING_APPROVAL').length,
+    OPEN: tickets.filter(c => c.status === 'OPEN').length,
+    IN_PROGRESS: tickets.filter(c => c.status === 'IN_PROGRESS').length,
+    RESOLVED: tickets.filter(c => c.status === 'RESOLVED').length,
+    REJECTED: tickets.filter(c => c.status === 'REJECTED').length,
   };
 
-  const updateComplaint = (next: Complaint) => {
+  const updateComplaint = (next: Ticket) => {
     setComplaints(prev => prev.map(c => (c.id === next.id ? { ...c, ...next } : c)));
     setAssignments(prev => ({ ...prev, [next.id]: next.assigned_technician?.id || '' }));
     if (detail?.id === next.id) setDetail({ ...detail, status: next.status, assigned_technician: next.assigned_technician, assigned_at: next.assigned_at ?? null, updated_at: next.updated_at });
@@ -127,15 +142,15 @@ export default function AdminComplaintsClient() {
   const patchComplaint = async (id: string, payload: { status?: ComplaintStatus; assigned_technician_id?: string | null }) => {
     setUpdating(id);
     try {
-      const res = await fetch(`/api/admin/complaints/${id}`, {
+      const res = await fetch(`/api/admin/tickets/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
       const data = await res.json();
-      if (res.ok && data.complaint) updateComplaint(data.complaint);
+      if (res.ok && data.ticket) updateComplaint(data.ticket);
     } catch {
-      console.error('Failed to update complaint');
+      console.error('Failed to update ticket');
     } finally {
       setUpdating(null);
     }
@@ -146,28 +161,28 @@ export default function AdminComplaintsClient() {
     setDetailLoading(true);
     setDetail(null);
     try {
-      const res = await fetch(`/api/admin/complaints/${complaintId}`);
+      const res = await fetch(`/api/admin/tickets/${complaintId}`);
       const data = await res.json();
       if (!res.ok) {
-        setDetailError(data.error || 'Failed to load complaint');
+        setDetailError(data.error || 'Failed to load ticket');
         return;
       }
-      setDetail(data.complaint || null);
+      setDetail(data.ticket || null);
     } catch {
-      setDetailError('Failed to load complaint');
+      setDetailError('Failed to load ticket');
     } finally {
       setDetailLoading(false);
     }
   };
 
-  const startOtpFlow = async (complaint: Complaint) => {
+  const startOtpFlow = async (ticket: Ticket) => {
     setOtp(['', '', '', '', '', '']);
     setOtpError('');
     setChallengeId('');
-    setUpdating(complaint.id);
+    setUpdating(ticket.id);
 
     try {
-      const res = await fetch(`/api/admin/complaints/${complaint.id}/send-otp`, { method: 'POST' });
+      const res = await fetch(`/api/admin/tickets/${ticket.id}/send-otp`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) {
         setOtpError(data.error || 'Failed to send OTP');
@@ -176,7 +191,7 @@ export default function AdminComplaintsClient() {
 
       setChallengeId(data.challengeId || '');
       let c = 60;
-      setOtpModal({ complaint, sent: true, verified: false, countdown: c });
+      setOtpModal({ ticket, sent: true, verified: false, countdown: c });
       const timer = setInterval(() => {
         c--;
         setOtpModal(m => ({ ...m, countdown: c }));
@@ -190,11 +205,11 @@ export default function AdminComplaintsClient() {
   };
 
   const resendOtp = async () => {
-    if (!otpModal.complaint) return;
+    if (!otpModal.ticket) return;
     setOtp(['', '', '', '', '', '']);
     setOtpError('');
     try {
-      const res = await fetch(`/api/admin/complaints/${otpModal.complaint.id}/send-otp`, { method: 'POST' });
+      const res = await fetch(`/api/admin/tickets/${otpModal.ticket.id}/send-otp`, { method: 'POST' });
       const data = await res.json();
       if (!res.ok) {
         setOtpError(data.error || 'Failed to send OTP');
@@ -225,13 +240,13 @@ export default function AdminComplaintsClient() {
     const code = otp.join('');
     if (code.length < 6) { setOtpError('Enter all 6 digits.'); return; }
     setOtpError('');
-    if (!otpModal.complaint || !challengeId) {
+    if (!otpModal.ticket || !challengeId) {
       setOtpError('OTP session expired. Please resend OTP.');
       return;
     }
 
     try {
-      const res = await fetch(`/api/admin/complaints/${otpModal.complaint.id}/verify-otp`, {
+      const res = await fetch(`/api/admin/tickets/${otpModal.ticket.id}/verify-otp`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ challengeId, otp: code }),
@@ -242,7 +257,7 @@ export default function AdminComplaintsClient() {
         return;
       }
 
-      await patchComplaint(otpModal.complaint.id, { status: 'RESOLVED' });
+      await patchComplaint(otpModal.ticket.id, { status: 'RESOLVED' });
       setOtpModal(m => ({ ...m, verified: true }));
     } catch {
       setOtpError('Failed to verify OTP');
@@ -250,16 +265,40 @@ export default function AdminComplaintsClient() {
   };
 
   const closeModal = () => {
-    setOtpModal({ complaint: null, sent: false, verified: false, countdown: 0 });
+    setOtpModal({ ticket: null, sent: false, verified: false, countdown: 0 });
     setOtp(['', '', '', '', '', '']);
     setOtpError('');
     setChallengeId('');
   };
 
-  const getUserName = (c: Complaint) => c.users?.name || c.reporter_name || 'Guest';
-  const getUserEmail = (c: Complaint) => c.users?.email || c.reporter_email || '-';
-  const getUserPhone = (c: Complaint) => c.users?.phone || c.reporter_phone || '-';
-  const getAssignedTech = (c: Complaint) => c.assigned_technician?.name || c.assigned_technician?.email || '-';
+  const getUserName = (c: Ticket) => c.users?.name || c.reporter_name || 'Guest';
+  const getUserEmail = (c: Ticket) => c.users?.email || c.reporter_email || '-';
+  const getUserPhone = (c: Ticket) => c.users?.phone || c.reporter_phone || '-';
+  const getAssignedTech = (c: Ticket) => c.assigned_technician?.name || c.assigned_technician?.email || '-';
+
+  const createTicket = async () => {
+    if (!createForm.issue_type || user.role !== 'ADMIN') return;
+    setCreating(true);
+    try {
+      const res = await fetch('/api/admin/tickets', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          issue_type: createForm.issue_type,
+          description: createForm.description || null,
+          assigned_technician_id: createForm.assigned_technician_id || null,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ticket) {
+        setComplaints(prev => [data.ticket, ...prev]);
+        setAssignments(prev => ({ ...prev, [data.ticket.id]: data.ticket.assigned_technician?.id || '' }));
+        setCreateForm({ issue_type: '', description: '', assigned_technician_id: '' });
+      }
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const tabs = [
     { value: 'all' as const, label: 'All', icon: AlertCircle },
@@ -306,39 +345,82 @@ export default function AdminComplaintsClient() {
             </button>
           ))}
         </div>
+        {user.role === 'ADMIN' && (
+          <div className="mb-6 bg-slate-900 border border-slate-800 rounded-2xl p-4">
+            <p className="text-sm text-slate-200 font-semibold mb-3">Create Ticket</p>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+              <select
+                value={createForm.issue_type}
+                onChange={e => setCreateForm(prev => ({ ...prev, issue_type: e.target.value }))}
+                className="input-dark text-sm"
+              >
+                <option value="">Select issue type</option>
+                {issueTypes.map(issue => (
+                  <option key={issue} value={issue}>{issue.replace(/_/g, ' ')}</option>
+                ))}
+              </select>
+              <input
+                type="text"
+                value={createForm.description}
+                onChange={e => setCreateForm(prev => ({ ...prev, description: e.target.value }))}
+                placeholder="Description (optional)"
+                className="input-dark text-sm md:col-span-2"
+              />
+              <div className="flex gap-2">
+                <select
+                  value={createForm.assigned_technician_id}
+                  onChange={e => setCreateForm(prev => ({ ...prev, assigned_technician_id: e.target.value }))}
+                  className="input-dark text-sm flex-1"
+                >
+                  <option value="">Unassigned</option>
+                  {technicians.map(t => (
+                    <option key={t.id} value={t.id}>{t.name || t.email || t.phone || t.id}</option>
+                  ))}
+                </select>
+                <button
+                  onClick={createTicket}
+                  disabled={creating || !createForm.issue_type}
+                  className="btn-primary px-3 py-2 text-sm disabled:opacity-50"
+                >
+                  {creating ? 'Creating...' : 'Create'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-3">
           {filtered.length === 0 && (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-10 text-center text-slate-500 text-sm">
-              No complaints in this category.
+              No tickets in this category.
             </div>
           )}
 
-          {filtered.map(complaint => (
-            <div key={complaint.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm transition-all">
+          {filtered.map(ticket => (
+            <div key={ticket.id} className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm transition-all">
               <div className="flex flex-col gap-3">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2 flex-wrap">
-                      <span className="text-xs font-mono text-slate-500">#{complaint.id.slice(0, 8)}</span>
-                      <span className="text-xs font-mono text-blue-300">{complaint.tracking_code}</span>
-                      <StatusBadge status={complaint.status.toLowerCase() as 'pending_approval' | 'open' | 'in_progress' | 'resolved' | 'rejected'} size="sm" />
-                      <span className="text-xs text-slate-500">{new Date(complaint.created_at).toLocaleDateString('en-IN')}</span>
+                      <span className="text-xs font-mono text-slate-500">#{ticket.id.slice(0, 8)}</span>
+                      <span className="text-xs font-mono text-blue-300">{ticket.tracking_code}</span>
+                      <StatusBadge status={ticket.status.toLowerCase() as 'pending_approval' | 'open' | 'in_progress' | 'resolved' | 'rejected'} size="sm" />
+                      <span className="text-xs text-slate-500">{new Date(ticket.created_at).toLocaleDateString('en-IN')}</span>
                     </div>
-                    <h3 className="subheading-rhythm font-semibold text-slate-100 mb-1">{complaint.issue_type?.replace(/_/g, ' ')}</h3>
-                    {complaint.explicit_description && (
-                      <p className="copy-rhythm text-sm text-slate-300 mb-3">{complaint.explicit_description}</p>
+                    <h3 className="subheading-rhythm font-semibold text-slate-100 mb-1">{ticket.issue_type?.replace(/_/g, ' ')}</h3>
+                    {ticket.explicit_description && (
+                      <p className="copy-rhythm text-sm text-slate-300 mb-3">{ticket.explicit_description}</p>
                     )}
                     <div className="flex flex-wrap gap-3 text-xs text-slate-400">
-                      <span className="font-medium text-slate-200">{getUserName(complaint)}</span>
-                      <span>{getUserEmail(complaint)}</span>
-                      <span>{getUserPhone(complaint)}</span>
-                      <span className="text-amber-300">Assigned: {getAssignedTech(complaint)}</span>
+                      <span className="font-medium text-slate-200">{getUserName(ticket)}</span>
+                      <span>{getUserEmail(ticket)}</span>
+                      <span>{getUserPhone(ticket)}</span>
+                      <span className="text-amber-300">Assigned: {getAssignedTech(ticket)}</span>
                     </div>
                   </div>
 
                   <button
-                    onClick={() => openDetails(complaint.id)}
+                    onClick={() => openDetails(ticket.id)}
                     className="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
                   >
                     <Eye size={12} /> View Details
@@ -349,8 +431,8 @@ export default function AdminComplaintsClient() {
                   <div className="flex flex-wrap items-center gap-2 bg-slate-950/60 border border-slate-800 rounded-xl p-3">
                     <UserCheck size={14} className="text-amber-300" />
                     <select
-                      value={assignments[complaint.id] ?? ''}
-                      onChange={e => setAssignments(prev => ({ ...prev, [complaint.id]: e.target.value }))}
+                      value={assignments[ticket.id] ?? ''}
+                      onChange={e => setAssignments(prev => ({ ...prev, [ticket.id]: e.target.value }))}
                       className="input-dark text-sm min-w-[220px]"
                     >
                       <option value="">Unassigned</option>
@@ -361,8 +443,8 @@ export default function AdminComplaintsClient() {
                       ))}
                     </select>
                     <button
-                      onClick={() => patchComplaint(complaint.id, { assigned_technician_id: assignments[complaint.id] || null })}
-                      disabled={updating === complaint.id}
+                      onClick={() => patchComplaint(ticket.id, { assigned_technician_id: assignments[ticket.id] || null })}
+                      disabled={updating === ticket.id}
                       className="bg-amber-900/20 hover:bg-amber-900/35 border border-amber-700/60 text-amber-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                     >
                       Save Assignment
@@ -371,43 +453,43 @@ export default function AdminComplaintsClient() {
                 )}
 
                 <div className="flex flex-wrap gap-2">
-                  {complaint.status === 'PENDING_APPROVAL' && user.role === 'ADMIN' && (
+                  {ticket.status === 'PENDING_APPROVAL' && user.role === 'ADMIN' && (
                     <>
                       <button
-                        onClick={() => patchComplaint(complaint.id, { status: 'OPEN' })}
-                        disabled={updating === complaint.id}
+                        onClick={() => patchComplaint(ticket.id, { status: 'OPEN' })}
+                        disabled={updating === ticket.id}
                         className="flex items-center gap-1.5 bg-blue-900/20 hover:bg-blue-900/35 border border-blue-700/60 text-blue-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                       >
-                        {updating === complaint.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
+                        {updating === ticket.id ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle size={12} />}
                         Approve & Open
                       </button>
                       <button
-                        onClick={() => patchComplaint(complaint.id, { status: 'REJECTED' })}
-                        disabled={updating === complaint.id}
+                        onClick={() => patchComplaint(ticket.id, { status: 'REJECTED' })}
+                        disabled={updating === ticket.id}
                         className="flex items-center gap-1.5 bg-rose-900/20 hover:bg-rose-900/35 border border-rose-700/60 text-rose-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                       >
-                        {updating === complaint.id ? <Loader2 size={12} className="animate-spin" /> : <Ban size={12} />}
+                        {updating === ticket.id ? <Loader2 size={12} className="animate-spin" /> : <Ban size={12} />}
                         Reject
                       </button>
                     </>
                   )}
 
-                  {complaint.status === 'OPEN' && (
+                  {ticket.status === 'OPEN' && (
                     <button
-                      onClick={() => patchComplaint(complaint.id, { status: 'IN_PROGRESS' })}
-                      disabled={updating === complaint.id}
+                      onClick={() => patchComplaint(ticket.id, { status: 'IN_PROGRESS' })}
+                      disabled={updating === ticket.id}
                       className="flex items-center gap-1.5 bg-amber-900/20 hover:bg-amber-900/35 border border-amber-700/60 text-amber-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                     >
-                      {updating === complaint.id ? <Loader2 size={12} className="animate-spin" /> : <Clock size={12} />}
+                      {updating === ticket.id ? <Loader2 size={12} className="animate-spin" /> : <Clock size={12} />}
                       Start Working
                     </button>
                   )}
 
-                  {complaint.status === 'IN_PROGRESS' && (
+                  {ticket.status === 'IN_PROGRESS' && (
                     <button
                       onClick={() => {
-                        if (user.role === 'TECHNICIAN') startOtpFlow(complaint);
-                        else patchComplaint(complaint.id, { status: 'RESOLVED' });
+                        if (user.role === 'TECHNICIAN') startOtpFlow(ticket);
+                        else patchComplaint(ticket.id, { status: 'RESOLVED' });
                       }}
                       className="flex items-center gap-1.5 bg-emerald-900/20 hover:bg-emerald-900/30 border border-emerald-700/60 text-emerald-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
                     >
@@ -416,18 +498,18 @@ export default function AdminComplaintsClient() {
                     </button>
                   )}
 
-                  {complaint.status === 'REJECTED' && user.role === 'ADMIN' && (
+                  {ticket.status === 'REJECTED' && user.role === 'ADMIN' && (
                     <button
-                      onClick={() => patchComplaint(complaint.id, { status: 'PENDING_APPROVAL' })}
-                      disabled={updating === complaint.id}
+                      onClick={() => patchComplaint(ticket.id, { status: 'PENDING_APPROVAL' })}
+                      disabled={updating === ticket.id}
                       className="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                     >
-                      {updating === complaint.id ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                      {updating === ticket.id ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
                       Re-review
                     </button>
                   )}
 
-                  {complaint.status === 'RESOLVED' && (
+                  {ticket.status === 'RESOLVED' && (
                     <span className="flex items-center gap-1.5 bg-emerald-900/20 border border-emerald-700/60 text-emerald-300 text-xs font-semibold px-3 py-1.5 rounded-lg">
                       <CheckCircle size={12} /> Resolved
                     </span>
@@ -439,26 +521,26 @@ export default function AdminComplaintsClient() {
         </div>
       </div>
 
-      {otpModal.complaint && (
+      {otpModal.ticket && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="bg-slate-900 rounded-3xl shadow-2xl p-8 w-full max-w-sm">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="subheading-rhythm text-lg font-bold text-slate-100">{otpModal.verified ? 'Complaint Resolved!' : 'Resolve via OTP'}</h3>
+              <h3 className="subheading-rhythm text-lg font-bold text-slate-100">{otpModal.verified ? 'Ticket Resolved!' : 'Resolve via OTP'}</h3>
               <button onClick={closeModal} className="text-slate-500 hover:text-slate-300 p-1"><X size={18} /></button>
             </div>
             {otpModal.verified ? (
               <div className="text-center">
                 <div className="inline-flex p-4 bg-emerald-900/30 rounded-full mb-4"><CheckCircle size={28} className="text-emerald-300" /></div>
-                <p className="text-slate-200 text-sm mb-2 font-medium">#{otpModal.complaint.id.slice(0, 8)}</p>
-                <p className="text-slate-400 text-sm mb-5">Complaint has been verified and resolved successfully.</p>
+                <p className="text-slate-200 text-sm mb-2 font-medium">#{otpModal.ticket.id.slice(0, 8)}</p>
+                <p className="text-slate-400 text-sm mb-5">Ticket has been verified and resolved successfully.</p>
                 <button onClick={closeModal} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl transition-colors">Done</button>
               </div>
             ) : (
               <>
                 <div className="bg-blue-900/30 border border-blue-700/60 rounded-xl px-4 py-3 mb-5">
                   <p className="text-xs text-blue-200 font-medium mb-0.5">Sending OTP to customer email</p>
-                  <p className="text-sm font-semibold text-blue-100">{getUserEmail(otpModal.complaint)}</p>
-                  <p className="text-xs text-blue-300 mt-1">Tracking Code: {otpModal.complaint.tracking_code}</p>
+                  <p className="text-sm font-semibold text-blue-100">{getUserEmail(otpModal.ticket)}</p>
+                  <p className="text-xs text-blue-300 mt-1">Tracking Code: {otpModal.ticket.tracking_code}</p>
                 </div>
                 <p className="copy-rhythm text-sm text-slate-300 mb-3">Enter the 6-digit OTP provided by the customer to confirm resolution:</p>
                 <div className="flex gap-2 justify-center mb-3">
@@ -494,7 +576,7 @@ export default function AdminComplaintsClient() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="bg-slate-900 rounded-3xl shadow-2xl p-8 w-full max-w-lg">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="subheading-rhythm text-lg font-bold text-slate-100">Complaint Details</h3>
+              <h3 className="subheading-rhythm text-lg font-bold text-slate-100">Ticket Details</h3>
               <button onClick={() => { setDetail(null); setDetailError(''); setDetailLoading(false); }} className="text-slate-500 hover:text-slate-300 p-1"><X size={18} /></button>
             </div>
 

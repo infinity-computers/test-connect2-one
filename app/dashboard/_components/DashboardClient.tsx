@@ -40,7 +40,7 @@ type Payment = {
 
 type ComplaintStatus = 'PENDING_APPROVAL' | 'OPEN' | 'IN_PROGRESS' | 'RESOLVED' | 'REJECTED';
 
-type Complaint = {
+type Ticket = {
   id: string;
   tracking_code: string;
   issue_type: string;
@@ -67,10 +67,10 @@ export default function DashboardClient() {
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
   const [payments, setPayments] = useState<Payment[]>([]);
-  const [complaints, setComplaints] = useState<Complaint[]>([]);
+  const [tickets, setComplaints] = useState<Ticket[]>([]);
   const [complaintsLoading, setComplaintsLoading] = useState(true);
   const [complaintFilter, setComplaintFilter] = useState<'all' | ComplaintStatus>('all');
-  const [selectedComplaint, setSelectedComplaint] = useState<Complaint | null>(null);
+  const [selectedComplaint, setSelectedComplaint] = useState<Ticket | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -81,7 +81,7 @@ export default function DashboardClient() {
           fetch('/api/subscriptions/me'),
           fetch('/api/payments/me')
         ]);
-        const complaintRes = await fetch('/api/complaints');
+        const complaintRes = await fetch('/api/tickets');
 
         const subData = await subRes.json();
         const payData = await payRes.json();
@@ -89,7 +89,7 @@ export default function DashboardClient() {
 
         setSubscription(subData.subscription);
         setPayments(payData.payments || []);
-        setComplaints(complaintData.complaints || []);
+        setComplaints(complaintData.tickets || []);
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
       } finally {
@@ -121,16 +121,16 @@ export default function DashboardClient() {
   };
 
   const filteredComplaints = complaintFilter === 'all'
-    ? complaints
-    : complaints.filter(c => c.status === complaintFilter);
+    ? tickets
+    : tickets.filter(c => c.status === complaintFilter);
 
   const complaintCounts = {
-    all: complaints.length,
-    PENDING_APPROVAL: complaints.filter(c => c.status === 'PENDING_APPROVAL').length,
-    OPEN: complaints.filter(c => c.status === 'OPEN').length,
-    IN_PROGRESS: complaints.filter(c => c.status === 'IN_PROGRESS').length,
-    RESOLVED: complaints.filter(c => c.status === 'RESOLVED').length,
-    REJECTED: complaints.filter(c => c.status === 'REJECTED').length,
+    all: tickets.length,
+    PENDING_APPROVAL: tickets.filter(c => c.status === 'PENDING_APPROVAL').length,
+    OPEN: tickets.filter(c => c.status === 'OPEN').length,
+    IN_PROGRESS: tickets.filter(c => c.status === 'IN_PROGRESS').length,
+    RESOLVED: tickets.filter(c => c.status === 'RESOLVED').length,
+    REJECTED: tickets.filter(c => c.status === 'REJECTED').length,
   };
 
   if (loading) {
@@ -170,11 +170,11 @@ export default function DashboardClient() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* Complaint Summary */}
+        {/* Ticket Summary */}
         <div>
           <div className="flex items-center justify-between mb-4">
             <h2 className="subheading-rhythm text-lg font-bold text-slate-100">My Complaints</h2>
-            <button onClick={() => onNavigate('/contact')} className="btn-primary px-4 py-2 text-sm">Raise Complaint</button>
+            <button onClick={() => onNavigate('/contact')} className="btn-primary px-4 py-2 text-sm">Raise Ticket</button>
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
@@ -208,35 +208,35 @@ export default function DashboardClient() {
           </div>
 
           {complaintsLoading ? (
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">Loading complaints...</div>
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">Loading tickets...</div>
           ) : filteredComplaints.length === 0 ? (
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-center text-slate-400">
-              No complaints found.
+              No tickets found.
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-3">
-              {filteredComplaints.map(complaint => (
+              {filteredComplaints.map(ticket => (
                 <button
-                  key={complaint.id}
-                  onClick={() => setSelectedComplaint(complaint)}
+                  key={ticket.id}
+                  onClick={() => setSelectedComplaint(ticket)}
                   className="w-full text-left bg-slate-900 border border-slate-800 rounded-2xl p-4 hover:border-slate-700 transition-colors"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 mb-1 flex-wrap">
                         <AlertCircle size={14} className="text-blue-300" />
-                        <p className="text-sm font-semibold text-slate-100 truncate">{complaint.tracking_code}</p>
-                        <StatusBadge status={complaint.status.toLowerCase() as 'pending_approval' | 'open' | 'in_progress' | 'resolved' | 'rejected'} size="sm" />
+                        <p className="text-sm font-semibold text-slate-100 truncate">{ticket.tracking_code}</p>
+                        <StatusBadge status={ticket.status.toLowerCase() as 'pending_approval' | 'open' | 'in_progress' | 'resolved' | 'rejected'} size="sm" />
                       </div>
-                      <p className="text-xs text-slate-400">{complaint.issue_type.replace(/_/g, ' ')}</p>
-                      {complaint.assigned_technician && (
+                      <p className="text-xs text-slate-400">{ticket.issue_type.replace(/_/g, ' ')}</p>
+                      {ticket.assigned_technician && (
                         <p className="text-xs text-amber-300 mt-1">
-                          Technician: {complaint.assigned_technician.name || complaint.assigned_technician.email || 'Assigned'}
+                          Technician: {ticket.assigned_technician.name || ticket.assigned_technician.email || 'Assigned'}
                         </p>
                       )}
                     </div>
                     <div className="flex items-center gap-2 text-xs text-slate-400">
-                      <span>{formatDate(complaint.created_at)}</span>
+                      <span>{formatDate(ticket.created_at)}</span>
                       <ChevronRight size={14} />
                     </div>
                   </div>
@@ -354,7 +354,7 @@ export default function DashboardClient() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="bg-slate-900 rounded-3xl shadow-2xl p-6 w-full max-w-lg">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="subheading-rhythm text-lg font-bold text-slate-100">Complaint Details</h3>
+              <h3 className="subheading-rhythm text-lg font-bold text-slate-100">Ticket Details</h3>
               <button onClick={() => setSelectedComplaint(null)} className="text-slate-500 hover:text-slate-300">
                 <span className="sr-only">Close</span>
                 ×
