@@ -276,6 +276,43 @@ export default function AdminComplaintsClient() {
   const getUserPhone = (c: Ticket) => c.users?.phone || c.reporter_phone || '-';
   const getAssignedTech = (c: Ticket) => c.assigned_technician?.name || c.assigned_technician?.email || '-';
 
+const progressStages: ComplaintStatus[] = ['PENDING_APPROVAL', 'OPEN', 'IN_PROGRESS', 'RESOLVED'];
+
+  const getStageIndex = (status: ComplaintStatus) => progressStages.indexOf(status);
+
+  const renderTicketProgress = (status: ComplaintStatus) => {
+    if (status === 'REJECTED') {
+      return (
+        <div className="mt-2 rounded-lg border border-rose-700/50 bg-rose-900/20 px-3 py-2 text-xs font-medium text-rose-200">
+          Ticket rejected by admin
+        </div>
+      );
+    }
+
+    const currentIndex = getStageIndex(status);
+
+    return (
+      <div className="mt-2">
+        <div className="grid grid-cols-4 gap-2">
+          {progressStages.map((step, idx) => {
+            const isDone = idx <= currentIndex;
+            const isCurrent = idx === currentIndex;
+            const label = step === 'PENDING_APPROVAL' ? 'Pending' : step === 'IN_PROGRESS' ? 'In Progress' : step.charAt(0) + step.slice(1).toLowerCase();
+            const barClass = 'h-2 w-full rounded-full ' + (isDone ? 'bg-cyan-400' : 'bg-slate-700') + (isCurrent ? ' ring-2 ring-cyan-400/40' : '');
+            const textClass = 'text-[10px] font-medium ' + (isDone ? 'text-cyan-200' : 'text-slate-500');
+
+            return (
+              <div key={step} className="flex flex-col items-center gap-1">
+                <div className={barClass} />
+                <span className={textClass}>{label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   const createTicket = async () => {
     if (!createForm.issue_type || user.role !== 'ADMIN') return;
     setCreating(true);
@@ -316,7 +353,7 @@ export default function AdminComplaintsClient() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-slate-300 text-xs mb-1">{user.role === 'ADMIN' ? 'Admin Portal' : 'Technician Portal'}</p>
-              <h1 className="subheading-rhythm text-2xl font-bold">Complaints</h1>
+              <h1 className="subheading-rhythm text-2xl font-bold">Tickets</h1>
               <p className="text-slate-500 text-sm mt-0.5">Welcome, {user.name}</p>
             </div>
             <button
@@ -417,6 +454,8 @@ export default function AdminComplaintsClient() {
                       <span>{getUserPhone(ticket)}</span>
                       <span className="text-amber-300">Assigned: {getAssignedTech(ticket)}</span>
                     </div>
+
+                    {renderTicketProgress(ticket.status)}
                   </div>
 
                   <button
@@ -599,6 +638,8 @@ export default function AdminComplaintsClient() {
                   <p className="text-xs text-slate-500 uppercase tracking-wide">Assigned Technician</p>
                   <p className="text-sm text-amber-200 font-medium">{detail.assigned_technician?.name || detail.assigned_technician?.email || '-'}</p>
                 </div>
+
+                {renderTicketProgress(detail.status)}
                 {detail.explicit_description && (
                   <div>
                     <p className="text-xs text-slate-500 uppercase tracking-wide">Description</p>
