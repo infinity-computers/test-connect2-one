@@ -45,13 +45,22 @@ export const plans: Plan[] = [
   { id: 'PRE-80', category: 'Premium', speed: 80, features: premiumFeatures, variants: [{ duration: '3m', months: 3, price: 5499 }, { duration: '6m', months: 6, price: 8199 }, { duration: '12m', months: 12, price: 11199 }] },
   { id: 'PRE-100', category: 'Premium', speed: 100, badge: 'Best Value', features: premiumFeatures, variants: [{ duration: '3m', months: 3, price: 5999 }, { duration: '6m', months: 6, price: 8999 }, { duration: '12m', months: 12, price: 12499 }] },
 
+  { id: 'PRE-150', category: 'Premium', speed: 150, features: premiumFeatures, variants: [{ duration: '3m', months: 3, price: 7999 }, { duration: '6m', months: 6, price: 10499 }, { duration: '12m', months: 12, price: 12999 }] },
+  { id: 'PRE-200', category: 'Premium', speed: 200, features: premiumFeatures, variants: [{ duration: '3m', months: 3, price: 9599 }, { duration: '6m', months: 6, price: 12999 }, { duration: '12m', months: 12, price: 15999 }] },
+  { id: 'PRE-300', category: 'Premium', speed: 300, badge: 'Ultra', features: premiumFeatures, variants: [{ duration: '3m', months: 3, price: 14499 }, { duration: '6m', months: 6, price: 18999 }, { duration: '12m', months: 12, price: 22999 }] },
   { id: 'BUD-40', category: 'Budget', speed: 40, badge: 'Popular', features: budgetFeatures, variants: [{ duration: '3m', months: 3, price: 3499 }, { duration: '6m', months: 6, price: 4899 }, { duration: '12m', months: 12, price: 5999 }] },
   { id: 'BUD-60', category: 'Budget', speed: 60, features: budgetFeatures, variants: [{ duration: '3m', months: 3, price: 4199 }, { duration: '6m', months: 6, price: 5799 }, { duration: '12m', months: 12, price: 7199 }] },
   { id: 'BUD-80', category: 'Budget', speed: 80, features: budgetFeatures, variants: [{ duration: '3m', months: 3, price: 4599 }, { duration: '6m', months: 6, price: 6199 }, { duration: '12m', months: 12, price: 7999 }] },
   { id: 'BUD-100', category: 'Budget', speed: 100, badge: 'Best Value', features: budgetFeatures, variants: [{ duration: '3m', months: 3, price: 4999 }, { duration: '6m', months: 6, price: 6499 }, { duration: '12m', months: 12, price: 8499 }] },
 
+  { id: 'BUD-150', category: 'Budget', speed: 150, features: budgetFeatures, variants: [{ duration: '3m', months: 3, price: 6799 }, { duration: '6m', months: 6, price: 8999 }, { duration: '12m', months: 12, price: 10999 }] },
+  { id: 'BUD-200', category: 'Budget', speed: 200, features: budgetFeatures, variants: [{ duration: '3m', months: 3, price: 8199 }, { duration: '6m', months: 6, price: 10999 }, { duration: '12m', months: 12, price: 13499 }] },
+  { id: 'BUD-300', category: 'Budget', speed: 300, badge: 'Ultra', features: budgetFeatures, variants: [{ duration: '3m', months: 3, price: 12499 }, { duration: '6m', months: 6, price: 16499 }, { duration: '12m', months: 12, price: 19999 }] },
   { id: 'ECO-40', category: 'Eco', speed: 40, badge: 'Starter', features: ecoFeatures, variants: [{ duration: '3m', months: 3, price: 2899 }, { duration: '6m', months: 6, price: 3899 }, { duration: '12m', months: 12, price: 4999 }] },
   { id: 'ECO-60', category: 'Eco', speed: 60, features: ecoFeatures, variants: [{ duration: '3m', months: 3, price: 3399 }, { duration: '6m', months: 6, price: 4699 }, { duration: '12m', months: 12, price: 5799 }] },
   { id: 'ECO-80', category: 'Eco', speed: 80, features: ecoFeatures, variants: [{ duration: '3m', months: 3, price: 3699 }, { duration: '6m', months: 6, price: 5099 }, { duration: '12m', months: 12, price: 6299 }] },
   { id: 'ECO-100', category: 'Eco', speed: 100, badge: 'Best Value', features: ecoFeatures, variants: [{ duration: '3m', months: 3, price: 4099 }, { duration: '6m', months: 6, price: 5499 }, { duration: '12m', months: 12, price: 6999 }] },
+  { id: 'ECO-150', category: 'Eco', speed: 150, features: ecoFeatures, variants: [{ duration: '3m', months: 3, price: 5999 }, { duration: '6m', months: 6, price: 7999 }, { duration: '12m', months: 12, price: 9999 }] },
+  { id: 'ECO-200', category: 'Eco', speed: 200, features: ecoFeatures, variants: [{ duration: '3m', months: 3, price: 6999 }, { duration: '6m', months: 6, price: 9499 }, { duration: '12m', months: 12, price: 11999 }] },
+  { id: 'ECO-300', category: 'Eco', speed: 300, badge: 'Ultra', features: ecoFeatures, variants: [{ duration: '3m', months: 3, price: 10499 }, { duration: '6m', months: 6, price: 13999 }, { duration: '12m', months: 12, price: 17999 }] },
 ];

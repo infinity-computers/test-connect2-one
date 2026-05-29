@@ -55,7 +55,7 @@ export default function PlansClient() {
             Broadband Plans
           </h1>
           <p className="copy-rhythm text-slate-400 max-w-lg mx-auto">
-            Choose from Eco, Budget, or Premium plans with speeds up to 100
+            Choose from Eco, Budget, or Premium plans with speeds up to 300
             Mbps. All plans include unlimited data.
           </p>
         </div>

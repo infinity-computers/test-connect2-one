@@ -3,7 +3,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 TRUNCATE TABLE otp_challenges;
 TRUNCATE TABLE payments;
 TRUNCATE TABLE subscriptions;
-TRUNCATE TABLE complaints;
+TRUNCATE TABLE tickets;
 TRUNCATE TABLE plan_variants;
 TRUNCATE TABLE plans;
 TRUNCATE TABLE users;
@@ -42,6 +42,17 @@ VALUES
   ('pv_pre_100_6', 'plan_premium', 100, 6, 8999.00),
   ('pv_pre_100_12', 'plan_premium', 100, 12, 12499.00),
 
+    ('pv_pre_150_3', 'plan_premium', 150, 3, 7999.00),
+  ('pv_pre_150_6', 'plan_premium', 150, 6, 10499.00),
+  ('pv_pre_150_12', 'plan_premium', 150, 12, 12999.00),
+  ('pv_pre_200_3', 'plan_premium', 200, 3, 9599.00),
+  ('pv_pre_200_6', 'plan_premium', 200, 6, 12999.00),
+  ('pv_pre_200_12', 'plan_premium', 200, 12, 15999.00),
+  ('pv_pre_300_3', 'plan_premium', 300, 3, 14499.00),
+  ('pv_pre_300_6', 'plan_premium', 300, 6, 18999.00),
+  ('pv_pre_300_12', 'plan_premium', 300, 12, 22999.00),
+
+
   ('pv_bud_40_3', 'plan_budget', 40, 3, 3499.00),
   ('pv_bud_40_6', 'plan_budget', 40, 6, 4899.00),
   ('pv_bud_40_12', 'plan_budget', 40, 12, 5999.00),
@@ -55,6 +66,16 @@ VALUES
   ('pv_bud_100_6', 'plan_budget', 100, 6, 6499.00),
   ('pv_bud_100_12', 'plan_budget', 100, 12, 8499.00),
 
+  ('pv_bud_150_3', 'plan_budget', 150, 3, 6799.00),
+  ('pv_bud_150_6', 'plan_budget', 150, 6, 8999.00),
+  ('pv_bud_150_12', 'plan_budget', 150, 12, 10999.00),
+  ('pv_bud_200_3', 'plan_budget', 200, 3, 8199.00),
+  ('pv_bud_200_6', 'plan_budget', 200, 6, 10999.00),
+  ('pv_bud_200_12', 'plan_budget', 200, 12, 13499.00),
+  ('pv_bud_300_3', 'plan_budget', 300, 3, 12499.00),
+  ('pv_bud_300_6', 'plan_budget', 300, 6, 16499.00),
+  ('pv_bud_300_12', 'plan_budget', 300, 12, 19999.00),
+
   ('pv_eco_40_3', 'plan_eco', 40, 3, 2899.00),
   ('pv_eco_40_6', 'plan_eco', 40, 6, 3899.00),
   ('pv_eco_40_12', 'plan_eco', 40, 12, 4999.00),
@@ -67,6 +88,16 @@ VALUES
   ('pv_eco_100_3', 'plan_eco', 100, 3, 4099.00),
   ('pv_eco_100_6', 'plan_eco', 100, 6, 5499.00),
   ('pv_eco_100_12', 'plan_eco', 100, 12, 6999.00);
+
+  ('pv_eco_150_3', 'plan_eco', 150, 3, 5999.00),
+  ('pv_eco_150_6', 'plan_eco', 150, 6, 7999.00),
+  ('pv_eco_150_12', 'plan_eco', 150, 12, 9999.00),
+  ('pv_eco_200_3', 'plan_eco', 200, 3, 6999.00),
+  ('pv_eco_200_6', 'plan_eco', 200, 6, 9499.00),
+  ('pv_eco_200_12', 'plan_eco', 200, 12, 11999.00),
+  ('pv_eco_300_3', 'plan_eco', 300, 3, 10499.00),
+  ('pv_eco_300_6', 'plan_eco', 300, 6, 13999.00),
+  ('pv_eco_300_12', 'plan_eco', 300, 12, 17999.00),
 
 -- SUBSCRIPTIONS
 INSERT INTO subscriptions (id, user_id, plan_variant_id, start_date, end_date, status)
@@ -82,7 +113,7 @@ VALUES
   ('pay_003', 'sub_002', 'usr_002', 6199.00, 'pay_003', 'order_003', 'failed', DATE_SUB(NOW(), INTERVAL 122 DAY));
 
 -- COMPLAINTS
-INSERT INTO complaints (id, tracking_code, user_id, source, reporter_name, reporter_phone, reporter_email, reporter_address, city, state, pin_code, issue_type, explicit_description, status)
+INSERT INTO tickets (id, tracking_code, user_id, source, reporter_name, reporter_phone, reporter_email, reporter_address, city, state, pin_code, issue_type, explicit_description, status)
 VALUES
   ('cmp_001', 'C2O-8K4P2Q', 'usr_001', 'AUTHENTICATED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Internet_speed', 'Connection speed drops every evening between 7 PM and 10 PM.', 'OPEN'),
   ('cmp_002', 'C2O-3L9X1R', 'usr_002', 'AUTHENTICATED', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 'Downtime_outage', 'No internet since morning after heavy rain.', 'IN_PROGRESS'),
@@ -93,7 +124,7 @@ VALUES
 INSERT INTO otp_challenges (
   id,
   user_id,
-  complaint_id,
+  ticket_id,
   purpose,
   target_type,
   target,
@@ -141,12 +172,12 @@ VALUES
     'usr_002',
     (
       SELECT id
-      FROM complaints
+      FROM tickets
       WHERE issue_type = 'Downtime/outage'
       ORDER BY id DESC
       LIMIT 1
     ),
-    'COMPLAINT_RESOLVE',
+    'TICKET_RESOLVE',
     'PHONE',
     '9974955503',
     'sha256$demo_hash_complaint_001',
@@ -169,6 +200,6 @@ SELECT 'subscriptions', COUNT(*) FROM subscriptions
 UNION ALL
 SELECT 'payments', COUNT(*) FROM payments
 UNION ALL
-SELECT 'complaints', COUNT(*) FROM complaints
+SELECT 'complaints', COUNT(*) FROM tickets
 UNION ALL
 SELECT 'otp_challenges', COUNT(*) FROM otp_challenges;
