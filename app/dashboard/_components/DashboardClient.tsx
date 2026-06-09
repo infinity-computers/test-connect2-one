@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { Wifi, Calendar, Clock, DollarSign, RefreshCw, LogOut, User, Loader2, AlertCircle, ChevronRight } from 'lucide-react';
+import { Wifi, Calendar, Clock, DollarSign, RefreshCw, LogOut, User, Loader2, AlertCircle, ChevronRight, Edit3, Save, X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../../context/AuthContext';
 import StatusBadge from '../../../components/ui/StatusBadge';
@@ -58,7 +58,7 @@ type Ticket = {
 
 export default function DashboardClient() {
   const router = useRouter();
-  const { user, logout } = useAuth();
+  const { user, updateUser, logout } = useAuth();
   const onNavigate = (path: string) => {
     router.push(path);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -71,6 +71,19 @@ export default function DashboardClient() {
   const [complaintsLoading, setComplaintsLoading] = useState(true);
   const [complaintFilter, setComplaintFilter] = useState<'all' | ComplaintStatus>('all');
   const [selectedComplaint, setSelectedComplaint] = useState<Ticket | null>(null);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileError, setProfileError] = useState('');
+  const [profileForm, setProfileForm] = useState({ name: '', email: '', phone: '' });
+
+  useEffect(() => {
+    if (!user) return;
+    setProfileForm({
+      name: user.name || '',
+      email: user.email || '',
+      phone: user.phone || '',
+    });
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
@@ -120,6 +133,38 @@ export default function DashboardClient() {
     return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
   };
 
+  const saveProfile = async () => {
+    setProfileError('');
+    if (!profileForm.name.trim() || !profileForm.email.trim() || !profileForm.phone.trim()) {
+      setProfileError('Name, email, and phone are required.');
+      return;
+    }
+
+    setSavingProfile(true);
+    try {
+      const res = await fetch('/api/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: profileForm.name.trim(),
+          email: profileForm.email.trim(),
+          phone: profileForm.phone.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setProfileError(data.error || 'Failed to update profile');
+        return;
+      }
+      updateUser(data.user);
+      setEditingProfile(false);
+    } catch {
+      setProfileError('Failed to update profile');
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const filteredComplaints = complaintFilter === 'all'
     ? tickets
     : tickets.filter(c => c.status === complaintFilter);
@@ -159,13 +204,61 @@ export default function DashboardClient() {
               </div>
               <p className="text-slate-400 text-xs ml-13 pl-0.5">{user.email} {user.phone && `· ${user.phone}`}</p>
             </div>
-            <button
-              onClick={() => { logout(); onNavigate('/'); }}
-              className="flex items-center gap-2 bg-slate-800/50 hover:bg-slate-800/70 border border-slate-600 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors self-start sm:self-auto"
-            >
-              <LogOut size={14} /> Sign Out
-            </button>
+            <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+              <button
+                onClick={() => { setEditingProfile((prev) => !prev); setProfileError(''); }}
+                className="flex items-center gap-2 bg-slate-800/50 hover:bg-slate-800/70 border border-slate-600 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+              >
+                {editingProfile ? <X size={14} /> : <Edit3 size={14} />}
+                {editingProfile ? 'Cancel' : 'Edit Profile'}
+              </button>
+              <button
+                onClick={() => { logout(); onNavigate('/'); }}
+                className="flex items-center gap-2 bg-slate-800/50 hover:bg-slate-800/70 border border-slate-600 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+              >
+                <LogOut size={14} /> Sign Out
+              </button>
+            </div>
           </div>
+
+          {editingProfile && (
+            <div className="mt-5 rounded-2xl border border-slate-700 bg-slate-900/70 p-4">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                <input
+                  type="text"
+                  value={profileForm.name}
+                  onChange={(e) => setProfileForm((prev) => ({ ...prev, name: e.target.value }))}
+                  className="input-dark py-2.5 text-sm"
+                  placeholder="Name"
+                />
+                <input
+                  type="email"
+                  value={profileForm.email}
+                  onChange={(e) => setProfileForm((prev) => ({ ...prev, email: e.target.value }))}
+                  className="input-dark py-2.5 text-sm"
+                  placeholder="Email"
+                />
+                <input
+                  type="tel"
+                  value={profileForm.phone}
+                  onChange={(e) => setProfileForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  className="input-dark py-2.5 text-sm"
+                  placeholder="Phone"
+                />
+              </div>
+              {profileError && <p className="mt-2 text-xs text-red-300">{profileError}</p>}
+              <div className="mt-3 flex justify-end">
+                <button
+                  onClick={saveProfile}
+                  disabled={savingProfile}
+                  className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {savingProfile ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

@@ -16,6 +16,7 @@ interface AuthContextType {
   user: AuthUser | null;
   role: UserRole;
   login: (user: AuthUser) => void;
+  updateUser: (user: AuthUser) => void;
   logout: () => void;
   loading: boolean;
 }
@@ -53,6 +54,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRoleState(u.role);
   };
 
+  const updateUser = (u: AuthUser) => {
+    setUser(u);
+    setRoleState(u.role);
+  };
+
   const logout = async () => {
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
@@ -64,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, role, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, role, login, updateUser, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
