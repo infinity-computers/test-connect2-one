@@ -12,6 +12,7 @@ import {
   Loader2,
   MessageSquare,
   UserPlus,
+  CreditCard,
   Eye,
   EyeOff,
   X,
@@ -286,6 +287,15 @@ export default function AdminDashboardClient() {
                 >
                   <UserPlus size={16} />
                   Add User
+                </button>
+              )}
+              {user.role === "ADMIN" && (
+                <button
+                  onClick={() => onNavigate("/admin/subscriptions")}
+                  className="flex w-full sm:w-auto items-center justify-center gap-2 bg-cyan-600 hover:bg-cyan-700 border border-cyan-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+                >
+                  <CreditCard size={16} />
+                  Manage Subscriptions
                 </button>
               )}
               <button
