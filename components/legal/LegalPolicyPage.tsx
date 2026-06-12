@@ -27,10 +27,6 @@ export default function LegalPolicyPage({ eyebrow, title, description, sections 
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 space-y-6">
-        <div className="rounded-2xl border border-amber-700/50 bg-amber-950/20 p-5 text-sm text-amber-100">
-          These terms are provided for customer transparency and operational use. The business owner should review them before publishing or using them for formal legal enforcement.
-        </div>
-
         {sections.map((section, index) => (
           <section key={section.title} className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-sm">
             <div className="mb-4 flex items-center gap-3">
