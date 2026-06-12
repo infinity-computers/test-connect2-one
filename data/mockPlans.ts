@@ -21,21 +21,21 @@ const premiumFeatures = [
   '4–24 Working Hours Resolution',
   'Dedicated Support Line',
   'Festival Offer Discounts',
-  'Unlimited Data',
+  '3.5 TB/Month FUP',
   'Static IP Available',
 ];
 
 const budgetFeatures = [
   'Priority Support',
   '24–48 Working Hours Resolution',
-  'Unlimited Data',
+  '3.5 TB/Month FUP',
   'WhatsApp Support',
 ];
 
 const ecoFeatures = [
   'Standard Support',
   '48–72 Working Hours Resolution',
-  'Unlimited Data',
+  '3.5 TB/Month FUP',
   'WhatsApp Support',
 ];
 

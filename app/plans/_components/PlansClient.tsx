@@ -56,7 +56,7 @@ export default function PlansClient() {
           </h1>
           <p className="copy-rhythm text-slate-400 max-w-lg mx-auto">
             Choose from Eco, Budget, or Premium plans with speeds up to 300
-            Mbps. All plans include unlimited data.
+            Mbps. All plans include a 3.5 TB/month FUP with 2 Mbps post-FUP speed.
           </p>
         </div>
       </div>
@@ -188,6 +188,10 @@ export default function PlansClient() {
                       </li>
                     ))}
                   </ul>
+                  <div className="mb-5 rounded-xl border border-cyan-800/60 bg-cyan-950/30 px-3 py-2.5 text-xs text-cyan-100">
+                    <p className="font-semibold">FUP Data Limit: 3.5 TB/Month</p>
+                    <p className="text-cyan-200/80">Post-FUP Speed: 2 Mbps</p>
+                  </div>
                   <button
                     type="button"
                     onClick={() => setShowConnectionModal(true)}

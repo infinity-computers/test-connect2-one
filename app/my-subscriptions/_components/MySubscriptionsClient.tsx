@@ -233,6 +233,10 @@ export default function MySubscriptionsClient() {
                   <p className="text-xl font-bold text-blue-400">₹{Number(variant.price).toLocaleString()}</p>
                   <p className="text-xs text-slate-500">{durationLabels[durationMap[variant.duration_months]]}</p>
                   <p className="text-xs text-emerald-300 mt-1">₹{Math.round(Number(variant.price) / variant.duration_months)}/mo avg</p>
+                  <div className="mt-3 rounded-xl border border-cyan-800/60 bg-cyan-950/30 px-3 py-2 text-xs text-cyan-100">
+                    <p className="font-semibold">FUP Data Limit: 3.5 TB/Month</p>
+                    <p className="text-cyan-200/80">Post-FUP Speed: 2 Mbps</p>
+                  </div>
                 </button>
               );
             })}

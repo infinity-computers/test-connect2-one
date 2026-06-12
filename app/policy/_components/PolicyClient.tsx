@@ -76,6 +76,38 @@ export default function PolicyClient() {
             ))}
           </div>
         </div>
+        {/* FUP Policy */}
+        <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-sm">
+          <div className="flex items-center gap-3 mb-5">
+            <div className="p-2.5 bg-cyan-900/20 rounded-xl">
+              <Info size={18} className="text-cyan-300" />
+            </div>
+            <h2 className="subheading-rhythm text-xl font-bold text-slate-100">Fair Usage Policy (FUP)</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+            <div className="rounded-xl border border-cyan-800/60 bg-cyan-950/30 p-4">
+              <p className="text-xs uppercase tracking-wide text-cyan-300 mb-1">FUP Data Limit</p>
+              <p className="text-lg font-bold text-slate-100">3.5 TB/Month</p>
+            </div>
+            <div className="rounded-xl border border-cyan-800/60 bg-cyan-950/30 p-4">
+              <p className="text-xs uppercase tracking-wide text-cyan-300 mb-1">Post-FUP Speed</p>
+              <p className="text-lg font-bold text-slate-100">2 Mbps</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {[
+              "All broadband plans are subject to a Fair Usage Policy limit of 3.5 TB data per month.",
+              "After the monthly FUP limit is consumed, the connection speed may be reduced to 2 Mbps until the next billing or usage cycle begins.",
+              "FUP limits are applied to maintain fair network usage and service quality for all customers.",
+            ].map((item, idx) => (
+              <div key={idx} className="flex items-start gap-3 p-3 rounded-xl border border-slate-800 hover:bg-slate-950 transition-colors">
+                <span className="w-6 h-6 rounded-full bg-slate-800 text-slate-300 flex items-center justify-center text-xs font-bold shrink-0">{idx + 1}</span>
+                <p className="text-sm text-slate-200 leading-relaxed">{item}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
 
         {/* Not Covered */}
         <div className="bg-slate-900 rounded-2xl border border-slate-800 p-6 shadow-sm">

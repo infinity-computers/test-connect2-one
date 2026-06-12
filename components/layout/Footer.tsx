@@ -1,6 +1,6 @@
 "use client";
 
-import { Phone, Mail, MapPin, Clock, Wifi } from 'lucide-react';
+import { Phone, Mail, MapPin, Clock, Wifi, FileText } from 'lucide-react';
 
 interface FooterProps {
   onNavigate: (path: string) => void;
@@ -10,7 +10,7 @@ export default function Footer({ onNavigate }: FooterProps) {
   return (
     <footer className="bg-slate-950 text-slate-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
           <div>
             <img src="/LOGO_(1).png" alt="Connect One Networks" className="h-10 w-auto mb-4" />
             <p className="text-sm text-slate-500 leading-relaxed mb-3">
@@ -43,7 +43,7 @@ export default function Footer({ onNavigate }: FooterProps) {
               </li>
               <li className="flex items-start gap-2">
                 <Clock size={14} className="text-cyan-300 mt-0.5 shrink-0" />
-                <span className="text-slate-300">11:00 AM – 06:00 PM</span>
+                <span className="text-slate-300">11:00 AM - 06:00 PM</span>
               </li>
             </ul>
           </div>
@@ -51,7 +51,7 @@ export default function Footer({ onNavigate }: FooterProps) {
           <div>
             <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wide">Quick Links</h4>
             <ul className="space-y-2 text-sm">
-              {[['Home', '/'], ['Plans', '/plans'], ['Service Policy', '/policy'], ['Contact', '/contact']].map(([label, path]) => (
+              {[["Home", "/"], ["Plans", "/plans"], ["Service Policy", "/policy"], ["Contact", "/contact"]].map(([label, path]) => (
                 <li key={path}>
                   <button
                     onClick={() => onNavigate(path)}
@@ -70,18 +70,35 @@ export default function Footer({ onNavigate }: FooterProps) {
           </div>
 
           <div>
+            <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wide">Legal</h4>
+            <ul className="space-y-2 text-sm">
+              {[["Privacy Policy", "/privacy-policy"], ["Refund & Return Policy", "/refund-policy"], ["Terms & Conditions", "/terms-and-conditions"]].map(([label, path]) => (
+                <li key={path}>
+                  <button
+                    onClick={() => onNavigate(path)}
+                    className="inline-flex items-center gap-2 text-left text-slate-500 hover:text-blue-300 transition-colors"
+                  >
+                    <FileText size={13} className="shrink-0" />
+                    {label}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div>
             <h4 className="text-white font-semibold mb-4 text-sm uppercase tracking-wide">Address & Bank</h4>
             <div className="flex items-start gap-2 mb-4">
               <MapPin size={14} className="text-cyan-300 mt-0.5 shrink-0" />
               <p className="text-xs text-slate-500 leading-relaxed">
                 13(A), A-Building, Shubham Valley,<br />
-                Village: Tavra, Bharuch – 392011,<br />
+                Village: Tavra, Bharuch - 392011,<br />
                 Gujarat, India
               </p>
             </div>
             <div className="bg-slate-800 rounded-lg p-3 text-xs space-y-1">
               <p className="text-slate-500 font-medium">Bank Details</p>
-              <p className="text-slate-300">HDFC Bank – Current A/C</p>
+              <p className="text-slate-300">HDFC Bank - Current A/C</p>
               <p className="text-slate-500">A/C: 99910081000999</p>
               <p className="text-slate-500">IFSC: HDFC0008146</p>
               <p className="text-slate-500">Branch: Suhradam Zadeshwar</p>

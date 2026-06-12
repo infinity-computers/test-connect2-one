@@ -38,7 +38,7 @@ export default function HomeClient() {
               <span className="text-cyan-300">Internet</span> for Bharuch
             </h1>
             <p className="copy-rhythm text-lg text-slate-300 mb-4 max-w-xl">
-              Transparent 3, 6, and 12 month broadband plans with 40–100 Mbps speeds. Local support, no hidden charges, and clear scope of work.
+              Transparent 3, 6, and 12 month broadband plans with 40–300 Mbps speeds. Local support, no hidden charges, and clear scope of work.
             </p>
             <p className="text-sm text-slate-400 mb-8">
               Serving Bharuch, Gujarat since inception &nbsp;·&nbsp; 99749 55542
@@ -73,7 +73,7 @@ export default function HomeClient() {
             {[
               { icon: Shield, title: 'Transparent Plans', desc: 'No hidden fees. All pricing clearly listed for 3, 6, and 12 month durations.', color: 'text-blue-200 bg-blue-900/40' },
               { icon: Users, title: 'Local Support', desc: 'Bharuch-based team with WhatsApp and phone support during office hours.', color: 'text-emerald-200 bg-emerald-900/30' },
-              { icon: Zap, title: 'Lightning Speeds', desc: 'Plans from 40 to 100 Mbps fiber speeds for homes and businesses.', color: 'text-blue-300 bg-blue-900/40' },
+              { icon: Zap, title: 'Lightning Speeds', desc: 'Plans from 40 to 300 Mbps fiber speeds for homes and businesses.', color: 'text-blue-300 bg-blue-900/40' },
               { icon: BarChart2, title: 'Clear Scope of Work', desc: 'We clearly define what we install and maintain, avoiding confusion.', color: 'text-cyan-200 bg-cyan-900/30' },
             ].map(({ icon: Icon, title, desc, color }) => (
               <div key={title} className="group bg-slate-900 border border-slate-800 rounded-2xl p-6 hover:shadow-lg hover:-translate-y-1 transition-all duration-300">
@@ -208,7 +208,7 @@ export default function HomeClient() {
                 Our Eco plans offer 40–100 Mbps fiber speeds at the most affordable pricing. Perfect for light to moderate internet users.
               </p>
               <ul className="mt-4 space-y-1.5 text-sm text-slate-300">
-                {['Unlimited data, no FUP', 'Standard support via WhatsApp', 'Plans from 3 to 12 months', 'Transparent billing, no surprises'].map(f => (
+                {['FUP Data Limit: 3.5 TB/Month', 'Standard support via WhatsApp', 'Post-FUP Speed: 2 Mbps', 'Transparent billing, no surprises'].map(f => (
                   <li key={f} className="flex items-center gap-2">
                     <span className="w-4 h-4 rounded-full bg-emerald-900/30 text-emerald-300 flex items-center justify-center text-xs font-bold">✓</span>
                     {f}
