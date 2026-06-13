@@ -238,7 +238,7 @@ export default function AdminDashboardClient() {
     const query = search.toLowerCase();
 
     return (
-      name.includes(query) || email.includes(query) || phone.includes(search)
+      name.includes(query) || email.includes(query) || phone.includes(query)
     );
   });
   const activeNotifications = notifications.filter(
@@ -566,7 +566,7 @@ export default function AdminDashboardClient() {
               />
               <input
                 type="text"
-                placeholder="Search users..."
+                placeholder="Search by name, email, or phone..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="input-dark pl-9 py-2 w-full sm:w-56"
