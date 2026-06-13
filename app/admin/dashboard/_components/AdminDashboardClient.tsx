@@ -13,6 +13,7 @@ import {
   MessageSquare,
   UserPlus,
   CreditCard,
+  Cable,
   Eye,
   EyeOff,
   X,
@@ -296,6 +297,15 @@ export default function AdminDashboardClient() {
                 >
                   <CreditCard size={16} />
                   Manage Subscriptions
+                </button>
+              )}
+              {user.role === "ADMIN" && (
+                <button
+                  onClick={() => onNavigate("/admin/new-connections")}
+                  className="flex w-full sm:w-auto items-center justify-center gap-2 bg-amber-600 hover:bg-amber-700 border border-amber-500 text-white text-sm font-medium px-4 py-2 rounded-xl transition-colors"
+                >
+                  <Cable size={16} />
+                  New Connections
                 </button>
               )}
               <button

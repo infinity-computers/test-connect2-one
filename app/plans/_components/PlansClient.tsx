@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { Zap, Star, Check, Tv, Gift } from "lucide-react";
-import { plans, PlanCategory } from "../../../data/mockPlans";
+import { Zap, Star, Check, Tv, Gift, Loader2 } from "lucide-react";
+import { plans, PlanCategory, Duration } from "../../../data/mockPlans";
 import { ottPlans } from "../../../data/mockOTT";
+import { useAuth } from "../../../context/AuthContext";
 
 const categoryInfo: Record<
   PlanCategory,
@@ -26,18 +27,168 @@ const categoryInfo: Record<
   },
 };
 
+type SelectedConnectionPlan = {
+  category: PlanCategory;
+  speed: number;
+  duration: Duration;
+  months: number;
+  price: number;
+};
+
+type ConnectionForm = {
+  name: string;
+  phone: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  pinCode: string;
+  landmark: string;
+  notes: string;
+};
+
+type CashfreeCheckout = {
+  checkout: (options: { paymentSessionId: string; redirectTarget?: "_self" | "_blank" | "_modal" }) => Promise<unknown>;
+};
+
+declare global {
+  interface Window {
+    Cashfree?: (options: { mode: "sandbox" | "production" }) => CashfreeCheckout;
+  }
+}
+
+const initialConnectionForm: ConnectionForm = {
+  name: "",
+  phone: "",
+  email: "",
+  address: "",
+  city: "Bharuch",
+  state: "Gujarat",
+  pinCode: "392001",
+  landmark: "",
+  notes: "",
+};
+
+function loadCashfreeSdk(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (typeof window === "undefined") return reject(new Error("Checkout is unavailable"));
+    if (window.Cashfree) return resolve();
+
+    const existingScript = document.querySelector<HTMLScriptElement>("script[data-cashfree-sdk]");
+    if (existingScript) {
+      existingScript.addEventListener("load", () => resolve(), { once: true });
+      existingScript.addEventListener("error", () => reject(new Error("Failed to load Cashfree checkout")), { once: true });
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
+    script.async = true;
+    script.dataset.cashfreeSdk = "true";
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error("Failed to load Cashfree checkout"));
+    document.body.appendChild(script);
+  });
+}
+
 export default function PlansClient() {
+  const { user } = useAuth();
   const [activeCategory, setActiveCategory] = useState<PlanCategory>("Eco");
   const [selectedDuration, setSelectedDuration] = useState<"3m" | "6m" | "12m">(
     "12m",
   );
   const [showConnectionModal, setShowConnectionModal] = useState(false);
+  const [selectedConnectionPlan, setSelectedConnectionPlan] = useState<SelectedConnectionPlan | null>(null);
+  const [connectionForm, setConnectionForm] = useState<ConnectionForm>(initialConnectionForm);
+  const [connectionError, setConnectionError] = useState("");
+  const [processingConnection, setProcessingConnection] = useState(false);
 
   const filtered = plans.filter((p) => p.category === activeCategory);
   const durationLabels = {
     "3m": "3 Months",
     "6m": "6 Months",
     "12m": "12 Months",
+  };
+
+  const openConnectionModal = (plan: SelectedConnectionPlan) => {
+    setSelectedConnectionPlan(plan);
+    setConnectionError("");
+    setShowConnectionModal(true);
+  };
+
+  const openOttContactModal = () => {
+    setSelectedConnectionPlan(null);
+    setConnectionError("");
+    setShowConnectionModal(true);
+  };
+
+  const closeConnectionModal = () => {
+    if (processingConnection) return;
+    setShowConnectionModal(false);
+    setSelectedConnectionPlan(null);
+    setConnectionError("");
+  };
+
+  const updateConnectionForm = (field: keyof ConnectionForm, value: string) => {
+    setConnectionForm((prev) => ({ ...prev, [field]: value }));
+    setConnectionError("");
+  };
+
+  const handleNewConnectionPayment = async () => {
+    if (!selectedConnectionPlan) return;
+
+    setConnectionError("");
+
+    const requiredFields: (keyof ConnectionForm)[] = ["name", "phone", "email", "address", "city", "state", "pinCode"];
+    const missingField = requiredFields.find((field) => !connectionForm[field].trim());
+    if (missingField) {
+      setConnectionError("Please fill all required fields before payment.");
+      return;
+    }
+
+    setProcessingConnection(true);
+    try {
+      const res = await fetch("/api/new-connections/create-checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          planName: selectedConnectionPlan.category,
+          speedMbps: selectedConnectionPlan.speed,
+          durationMonths: selectedConnectionPlan.months,
+          name: connectionForm.name.trim(),
+          phone: connectionForm.phone.trim(),
+          email: connectionForm.email.trim(),
+          address: connectionForm.address.trim(),
+          city: connectionForm.city.trim(),
+          state: connectionForm.state.trim(),
+          pinCode: connectionForm.pinCode.trim(),
+          landmark: connectionForm.landmark.trim(),
+          notes: connectionForm.notes.trim(),
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setConnectionError(data.error || "Failed to start payment.");
+        return;
+      }
+
+      await loadCashfreeSdk();
+      if (!window.Cashfree) {
+        throw new Error("Cashfree checkout failed to initialize");
+      }
+
+      const cashfree = window.Cashfree({ mode: data.mode || "sandbox" });
+      await cashfree.checkout({
+        paymentSessionId: data.paymentSessionId,
+        redirectTarget: "_self",
+      });
+    } catch (err) {
+      console.error("New connection payment error:", err);
+      setConnectionError("Something went wrong while starting payment. Please try again.");
+    } finally {
+      setProcessingConnection(false);
+    }
   };
 
   return (
@@ -194,8 +345,15 @@ export default function PlansClient() {
                   </div>
                   <button
                     type="button"
-                    onClick={() => setShowConnectionModal(true)}
-                    className={` block text-center py-2.5 rounded-xl text-sm font-semibold transition-colors`}>
+                    onClick={() => openConnectionModal({
+                      category: plan.category,
+                      speed: plan.speed,
+                      duration: selectedDuration,
+                      months: variant.months,
+                      price: variant.price,
+                    })}
+                    className="block w-full text-center py-2.5 rounded-xl text-sm font-semibold transition-colors bg-blue-600 text-white hover:bg-blue-700"
+                  >
                     Get Started
                   </button>
                 </div>
@@ -264,7 +422,7 @@ export default function PlansClient() {
               </div>
               <button
                 type="button"
-                onClick={() => setShowConnectionModal(true)}
+                onClick={openOttContactModal}
                 className="mt-auto pt-4 block w-full text-center py-2 rounded-xl text-sm font-semibold border-2 border-blue-700/60 text-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors"
               >
                 Add to Plan
@@ -272,26 +430,102 @@ export default function PlansClient() {
             </div>
           ))}
         </div>
-            {showConnectionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-100 mb-2">New Connection / Upgrade</h3>
-            <p className="text-sm text-slate-300 mb-4">Please contact us for new connections and plan upgrades.</p>
-            <p className="text-cyan-300 font-semibold text-lg mb-1">99749 55542</p>
-            <p className="text-xs text-slate-400 mb-5">New connections & upgrades</p>
-            <div className="flex gap-3">
-              <a href="tel:+919974955542" className="btn-primary flex-1 text-center py-2.5">Call Now</a>
-              <button
-                type="button"
-                onClick={() => setShowConnectionModal(false)}
-                className="flex-1 rounded-xl border border-slate-700 py-2.5 text-sm font-semibold text-slate-200"
-              >
-                Close
-              </button>
+
+        {showConnectionModal && (
+          <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/70 px-4 py-5 overflow-y-auto">
+            <div className="w-full max-w-2xl rounded-2xl border border-slate-700 bg-slate-900 p-5 sm:p-6 shadow-2xl">
+              {!selectedConnectionPlan ? (
+                <>
+                  <h3 className="text-lg font-bold text-slate-100 mb-2">New Connection / Upgrade</h3>
+                  <p className="text-sm text-slate-300 mb-4">Please contact us for OTT add-ons, plan upgrades, or custom plan assistance.</p>
+                  <p className="text-cyan-300 font-semibold text-lg mb-1">99749 55542</p>
+                  <p className="text-xs text-slate-400 mb-5">New connections & upgrades</p>
+                  <div className="flex gap-3">
+                    <a href="tel:+919974955542" className="btn-primary flex-1 text-center py-2.5">Call Now</a>
+                    <button type="button" onClick={closeConnectionModal} className="flex-1 rounded-xl border border-slate-700 py-2.5 text-sm font-semibold text-slate-200">Close</button>
+                  </div>
+                </>
+              ) : user ? (
+                <>
+                  <h3 className="text-lg font-bold text-slate-100 mb-2">Existing Customer</h3>
+                  <p className="text-sm text-slate-300 mb-5">
+                    New connection checkout is for new customers only. Renewal and upgrade payments for existing customers will be available from My Subscriptions.
+                  </p>
+                  <div className="rounded-xl border border-blue-800/60 bg-blue-950/30 p-4 text-sm text-blue-100 mb-5">
+                    Selected plan: {selectedConnectionPlan.category} {selectedConnectionPlan.speed} Mbps for {durationLabels[selectedConnectionPlan.duration]}.
+                  </div>
+                  <button type="button" onClick={closeConnectionModal} className="btn-primary w-full py-2.5">Close</button>
+                </>
+              ) : (
+                <>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-5">
+                    <div>
+                      <h3 className="text-lg font-bold text-slate-100">New Broadband Connection</h3>
+                      <p className="text-sm text-slate-400 mt-1">Fill your installation details and continue to Cashfree payment.</p>
+                    </div>
+                    <div className="rounded-xl border border-cyan-800/60 bg-cyan-950/30 px-4 py-3 text-sm text-cyan-100 sm:text-right">
+                      <p className="font-bold">{selectedConnectionPlan.category} {selectedConnectionPlan.speed} Mbps</p>
+                      <p>{durationLabels[selectedConnectionPlan.duration]} · ₹{selectedConnectionPlan.price.toLocaleString()}</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-amber-700/60 bg-amber-950/30 px-4 py-3 text-xs text-amber-100 mb-5">
+                    This payment covers only the selected broadband plan. Installation charges will be collected at the time of installation.
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Full Name *</label>
+                      <input className="input-dark py-2.5" value={connectionForm.name} onChange={(e) => updateConnectionForm("name", e.target.value)} placeholder="Customer name" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Phone *</label>
+                      <input className="input-dark py-2.5" value={connectionForm.phone} onChange={(e) => updateConnectionForm("phone", e.target.value)} placeholder="99749 55542" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Email *</label>
+                      <input type="email" className="input-dark py-2.5" value={connectionForm.email} onChange={(e) => updateConnectionForm("email", e.target.value)} placeholder="customer@example.com" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Pin Code *</label>
+                      <input className="input-dark py-2.5" value={connectionForm.pinCode} onChange={(e) => updateConnectionForm("pinCode", e.target.value)} placeholder="392001" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">City *</label>
+                      <input className="input-dark py-2.5" value={connectionForm.city} onChange={(e) => updateConnectionForm("city", e.target.value)} placeholder="Bharuch" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">State *</label>
+                      <input className="input-dark py-2.5" value={connectionForm.state} onChange={(e) => updateConnectionForm("state", e.target.value)} placeholder="Gujarat" />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Installation Address *</label>
+                      <textarea className="input-dark min-h-20 py-2.5" value={connectionForm.address} onChange={(e) => updateConnectionForm("address", e.target.value)} placeholder="House/flat number, street, area" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Landmark</label>
+                      <input className="input-dark py-2.5" value={connectionForm.landmark} onChange={(e) => updateConnectionForm("landmark", e.target.value)} placeholder="Nearby landmark" />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Notes</label>
+                      <input className="input-dark py-2.5" value={connectionForm.notes} onChange={(e) => updateConnectionForm("notes", e.target.value)} placeholder="Preferred timing, etc." />
+                    </div>
+                  </div>
+
+                  {connectionError && <p className="mt-4 rounded-xl border border-red-800/60 bg-red-950/30 px-4 py-3 text-sm text-red-200">{connectionError}</p>}
+
+                  <div className="flex flex-col sm:flex-row gap-3 mt-6">
+                    <button type="button" onClick={closeConnectionModal} disabled={processingConnection} className="flex-1 rounded-xl border border-slate-700 py-2.5 text-sm font-semibold text-slate-200 disabled:opacity-60">Cancel</button>
+                    <button type="button" onClick={handleNewConnectionPayment} disabled={processingConnection} className="btn-primary flex-1 py-2.5 flex items-center justify-center gap-2 disabled:opacity-60">
+                      {processingConnection ? <Loader2 size={16} className="animate-spin" /> : null}
+                      {processingConnection ? "Starting Payment..." : "Pay with Cashfree"}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </div>
   );

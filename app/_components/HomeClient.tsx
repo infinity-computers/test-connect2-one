@@ -1,7 +1,6 @@
 "use client";
 
 import { Zap, Users, Shield, BarChart2, ArrowRight, RefreshCw, Wifi } from 'lucide-react';
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { activeSubscription, paymentHistory } from '../../data/mockSubscriptions';
@@ -10,7 +9,6 @@ import { plans } from '../../data/mockPlans';
 export default function HomeClient() {
   const router = useRouter();
   const { user } = useAuth();
-  const [showConnectionModal, setShowConnectionModal] = useState(false);
   const renewalPlans = plans.filter(p => p.category === 'Budget').slice(0, 3);
   const onNavigate = (path: string) => {
     router.push(path);
@@ -52,7 +50,7 @@ export default function HomeClient() {
               </button>
               <button
                 type="button"
-                onClick={() => setShowConnectionModal(true)}
+                onClick={() => onNavigate('/plans')}
                 className="flex items-center gap-2 bg-slate-800/50 hover:bg-slate-800/70 border border-slate-600 text-white font-semibold px-6 py-3 rounded-xl transition-all duration-200 backdrop-blur-sm"
               >
                 Book Service Request
@@ -225,7 +223,7 @@ export default function HomeClient() {
               </button>
               <button
                 type="button"
-                onClick={() => setShowConnectionModal(true)}
+                onClick={() => onNavigate('/plans')}
                 className="border border-slate-700 text-slate-200 hover:border-blue-700 hover:text-blue-300 font-semibold px-6 py-3 rounded-xl transition-colors text-center"
               >
                 Book New Connection
@@ -235,26 +233,6 @@ export default function HomeClient() {
         </div>
       </section>
 
-      {showConnectionModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 shadow-2xl">
-            <h3 className="text-lg font-bold text-slate-100 mb-2">New Connection / Upgrade</h3>
-            <p className="text-sm text-slate-300 mb-4">Please contact us for new connections and plan upgrades.</p>
-            <p className="text-cyan-300 font-semibold text-lg mb-1">99749 55542</p>
-            <p className="text-xs text-slate-400 mb-5">New connections & upgrades</p>
-            <div className="flex gap-3">
-              <a href="tel:+919974955542" className="btn-primary flex-1 text-center py-2.5">Call Now</a>
-              <button
-                type="button"
-                onClick={() => setShowConnectionModal(false)}
-                className="flex-1 rounded-xl border border-slate-700 py-2.5 text-sm font-semibold text-slate-200"
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* CTA Banner */}
       {!user && (

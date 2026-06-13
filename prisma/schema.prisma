@@ -23,6 +23,7 @@ model users {
   otp_challenges   otp_challenges[]
   payments         payments[]
   subscriptions    subscriptions[]
+  new_connection_requests new_connection_requests[]
 
   @@index([role], map: "idx_users_role")
 }
@@ -51,6 +52,7 @@ model tickets {
   users                  users?          @relation("UserTickets", fields: [user_id], references: [id], onUpdate: Restrict, map: "fk_ticket_user")
   assigned_technician    users?          @relation("TechnicianAssignments", fields: [assigned_technician_id], references: [id], onUpdate: Restrict, map: "fk_ticket_assigned_technician")
   otp_challenges         otp_challenges[]
+  new_connection_request  new_connection_requests?
 
   @@index([user_id], map: "idx_tickets_user_id")
   @@index([assigned_technician_id, status], map: "idx_tickets_assigned_status")
@@ -92,6 +94,7 @@ model plan_variants {
   created_at      DateTime        @default(now())
   plans           plans           @relation(fields: [plan_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "plan_variants_ibfk_1")
   subscriptions   subscriptions[]
+  new_connection_requests new_connection_requests[]
 
   @@unique([plan_id, speed_mbps, duration_months], map: "unique_variant")
   @@index([plan_id], map: "idx_plan_id")
@@ -153,6 +156,42 @@ model otp_challenges {
   @@index([expires_at], map: "idx_otp_expires")
 }
 
+
+model new_connection_requests {
+  id                         String                @id @default(uuid())
+  user_id                    String?
+  plan_variant_id            String
+  ticket_id                  String?               @unique(map: "uk_new_connection_ticket_id")
+  customer_name              String
+  customer_email             String
+  customer_phone             String
+  installation_address       String
+  city                       String
+  state                      String
+  pin_code                   String
+  landmark                   String?
+  notes                      String?
+  amount                     Decimal
+  status                     new_connection_status @default(PENDING_PAYMENT)
+  cashfree_order_id          String                @unique(map: "uk_cashfree_order_id")
+  cashfree_payment_id        String?
+  cashfree_payment_session_id String?
+  paid_at                    DateTime?
+  admin_notified_at          DateTime?
+  customer_notified_at       DateTime?
+  created_at                 DateTime              @default(now())
+  updated_at                 DateTime              @updatedAt
+  users                      users?                @relation(fields: [user_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "new_connection_requests_user_id_fkey")
+  plan_variants              plan_variants         @relation(fields: [plan_variant_id], references: [id], onUpdate: Restrict, map: "new_connection_requests_plan_variant_id_fkey")
+  tickets                    tickets?              @relation(fields: [ticket_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "new_connection_requests_ticket_id_fkey")
+
+  @@index([status, created_at], map: "idx_new_connection_status_created")
+  @@index([customer_phone], map: "idx_new_connection_customer_phone")
+  @@index([customer_email], map: "idx_new_connection_customer_email")
+  @@index([user_id], map: "idx_new_connection_user_id")
+  @@index([plan_variant_id], map: "idx_new_connection_plan_variant_id")
+}
+
 model site_notifications {
   id          String   @id @default(uuid())
   title       String
@@ -162,6 +201,20 @@ model site_notifications {
   updated_at  DateTime @updatedAt
 
   @@index([expires_at], map: "idx_site_notifications_expires_at")
+}
+
+enum new_connection_status {
+  PENDING_PAYMENT
+  PAYMENT_FAILED
+  PAYMENT_DROPPED
+  PAID
+  UNDER_REVIEW
+  ASSIGNED
+  INSTALLATION_IN_PROGRESS
+  INSTALLED
+  ACTIVATED
+  CANCELLED
+  REFUNDED
 }
 
 enum ROLE {
