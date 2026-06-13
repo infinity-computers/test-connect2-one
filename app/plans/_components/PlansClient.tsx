@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Zap, Star, Check, Tv, Gift, Loader2 } from "lucide-react";
 import { plans, PlanCategory, Duration } from "../../../data/mockPlans";
 import { ottPlans } from "../../../data/mockOTT";
@@ -28,9 +28,9 @@ const categoryInfo: Record<
 };
 
 type SelectedConnectionPlan = {
-  category: PlanCategory;
+  category: string;
   speed: number;
-  duration: Duration;
+  duration: Duration | "1m";
   months: number;
   price: number;
 };
@@ -102,13 +102,19 @@ export default function PlansClient() {
   const [connectionForm, setConnectionForm] = useState<ConnectionForm>(initialConnectionForm);
   const [connectionError, setConnectionError] = useState("");
   const [processingConnection, setProcessingConnection] = useState(false);
+  const [showCashfreeTestPlan, setShowCashfreeTestPlan] = useState(false);
 
   const filtered = plans.filter((p) => p.category === activeCategory);
-  const durationLabels = {
+  const durationLabels: Record<string, string> = {
+    "1m": "1 Month",
     "3m": "3 Months",
     "6m": "6 Months",
     "12m": "12 Months",
   };
+
+  useEffect(() => {
+    setShowCashfreeTestPlan(new URLSearchParams(window.location.search).get("cashfreeTest") === "1");
+  }, []);
 
   const openConnectionModal = (plan: SelectedConnectionPlan) => {
     setSelectedConnectionPlan(plan);
@@ -362,6 +368,47 @@ export default function PlansClient() {
           })}
         </div>
 
+        {showCashfreeTestPlan && (
+          <div className="mb-14 rounded-3xl border border-amber-500/50 bg-amber-950/30 p-5 shadow-lg">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wide text-amber-300">
+                  Production payment test
+                </p>
+                <h2 className="mt-1 text-2xl font-bold text-slate-100">
+                  Cashfree Test Plan
+                </h2>
+                <p className="mt-2 text-sm text-slate-300">
+                  Use this hidden plan to verify live Cashfree checkout, webhook,
+                  ticket creation, and success-page flow with a Rs. 1 payment.
+                </p>
+                <p className="mt-2 text-xs text-amber-200">
+                  URL gate: <span className="font-mono">/plans?cashfreeTest=1</span>
+                </p>
+              </div>
+              <div className="rounded-2xl border border-amber-500/40 bg-slate-950/60 p-4 md:min-w-56">
+                <p className="text-sm text-slate-400">Test amount</p>
+                <p className="text-3xl font-black text-slate-100">Rs. 1</p>
+                <button
+                  type="button"
+                  onClick={() =>
+                    openConnectionModal({
+                      category: "Test",
+                      speed: 1,
+                      duration: "1m",
+                      months: 1,
+                      price: 1,
+                    })
+                  }
+                  className="mt-4 w-full rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition-colors hover:bg-amber-400"
+                >
+                  Test Cashfree Payment
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* OTT Section */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
@@ -452,7 +499,7 @@ export default function PlansClient() {
                     New connection checkout is for new customers only. Renewal and upgrade payments for existing customers will be available from My Subscriptions.
                   </p>
                   <div className="rounded-xl border border-blue-800/60 bg-blue-950/30 p-4 text-sm text-blue-100 mb-5">
-                    Selected plan: {selectedConnectionPlan.category} {selectedConnectionPlan.speed} Mbps for {durationLabels[selectedConnectionPlan.duration]}.
+                    Selected plan: {selectedConnectionPlan.category} {selectedConnectionPlan.speed} Mbps for {durationLabels[selectedConnectionPlan.duration] || ` Months`}.
                   </div>
                   <button type="button" onClick={closeConnectionModal} className="btn-primary w-full py-2.5">Close</button>
                 </>
@@ -465,7 +512,7 @@ export default function PlansClient() {
                     </div>
                     <div className="rounded-xl border border-cyan-800/60 bg-cyan-950/30 px-4 py-3 text-sm text-cyan-100 sm:text-right">
                       <p className="font-bold">{selectedConnectionPlan.category} {selectedConnectionPlan.speed} Mbps</p>
-                      <p>{durationLabels[selectedConnectionPlan.duration]} · ₹{selectedConnectionPlan.price.toLocaleString()}</p>
+                      <p>{durationLabels[selectedConnectionPlan.duration] || ` Months`} · ₹{selectedConnectionPlan.price.toLocaleString()}</p>
                     </div>
                   </div>
 

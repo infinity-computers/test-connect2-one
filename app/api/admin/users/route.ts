@@ -3,6 +3,7 @@ import { prisma } from "../../../../lib/prisma";
 import { getCurrentUser } from "../../../../lib/auth-token";
 import bcrypt from "bcryptjs";
 import { ROLE, users_auth_type } from "../../../../generated/prisma/enums";
+import { sendPlainEmail } from "../../../../lib/email";
 
 export const runtime = "nodejs";
 
@@ -68,12 +69,16 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Name, email, role, and auth_type are required" }, { status: 400 });
   }
 
-  if (authType === "PASSWORD" && !password) {
+  if (role === "USER" && !phone) {
+    return NextResponse.json({ error: "Phone is required for USER accounts" }, { status: 400 });
+  }
+
+  if (role !== "USER" && authType === "PASSWORD" && !password) {
     return NextResponse.json({ error: "Password is required for PASSWORD auth" }, { status: 400 });
   }
 
   try {
-    const passwordHash = authType === "PASSWORD" ? await bcrypt.hash(password, 10) : null;
+    const passwordHash = role !== "USER" && authType === "PASSWORD" ? await bcrypt.hash(password, 10) : null;
 
     const newUser = await prisma.users.create({
       data: {
@@ -94,6 +99,29 @@ export async function POST(req: NextRequest) {
         status: true,
       },
     });
+
+    if (newUser.role === "USER" && newUser.phone) {
+      await sendPlainEmail({
+        to: email,
+        subject: "Your Connect One Networks account is ready",
+        text: [
+          `Hi ${newUser.name},`,
+          "",
+          "Your Connect One Networks customer account has been created.",
+          "You can now sign in on our website using these details:",
+          "",
+          `Email: `,
+          `Phone: ${newUser.phone}`,
+          "",
+          `${process.env.NEXT_PUBLIC_APP_URL || "https://connect2one.in"}/login`,
+          "",
+          "Regards,",
+          "Connect One Networks",
+        ].join("\n"),
+      }).catch((emailErr) => {
+        console.error("api/admin/users welcome email error:", emailErr);
+      });
+    }
 
     return NextResponse.json({ ok: true, user: newUser }, { status: 201 });
   } catch (err) {

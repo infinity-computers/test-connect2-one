@@ -130,7 +130,11 @@ export default function AdminDashboardClient() {
       setAddUserError("Name and email are required.");
       return;
     }
-    if (newUser.auth_type === "PASSWORD" && !newUser.password) {
+    if (newUser.role === "USER" && !newUser.phone.trim()) {
+      setAddUserError("Phone is required for user login.");
+      return;
+    }
+    if (newUser.role !== "USER" && newUser.auth_type === "PASSWORD" && !newUser.password) {
       setAddUserError("Password is required for PASSWORD auth.");
       return;
     }
@@ -147,7 +151,7 @@ export default function AdminDashboardClient() {
           role: newUser.role,
           auth_type: newUser.auth_type,
           password:
-            newUser.auth_type === "PASSWORD" ? newUser.password : undefined,
+            newUser.role !== "USER" && newUser.auth_type === "PASSWORD" ? newUser.password : undefined,
         }),
       });
       const data = await res.json();
@@ -751,13 +755,13 @@ export default function AdminDashboardClient() {
                       }
                       className="input-dark py-2.5 pr-10"
                       placeholder={
-                        newUser.auth_type === "OTP"
+                        newUser.role === "USER" || newUser.auth_type === "OTP"
                           ? "Not required"
                           : "Set password"
                       }
-                      disabled={newUser.auth_type === "OTP"}
+                      disabled={newUser.role === "USER" || newUser.auth_type === "OTP"}
                     />
-                    {newUser.auth_type === "PASSWORD" && (
+                    {newUser.role !== "USER" && newUser.auth_type === "PASSWORD" && (
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
