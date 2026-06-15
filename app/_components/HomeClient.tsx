@@ -2,9 +2,12 @@
 
 import {
   ArrowRight,
-  Cable,
+  CheckCircle2,
+  Clock3,
+  Gauge,
   Headphones,
   MapPin,
+  RadioTower,
   RefreshCw,
   Shield,
   Sparkles,
@@ -53,54 +56,92 @@ const processSteps = [
   { title: 'Go online', desc: 'Installation and activation are completed by the local team.' },
 ];
 
-function FiberHeroVisual() {
-  const nodes = [
-    'left-[14%] top-[24%]',
-    'left-[34%] top-[14%]',
-    'right-[18%] top-[28%]',
-    'left-[21%] bottom-[24%]',
-    'right-[28%] bottom-[18%]',
-    'right-[10%] bottom-[38%]',
+function NetworkCommandPanel() {
+  const networkStats = [
+    { label: 'FUP limit', value: '3.5 TB', tone: 'text-cyan-100' },
+    { label: 'Post-FUP', value: '2 Mbps', tone: 'text-emerald-100' },
+    { label: 'Support', value: 'Local', tone: 'text-blue-100' },
+  ];
+
+  const workflow = [
+    'Plan selected',
+    'Request verified',
+    'Technician assigned',
+    'Connected',
   ];
 
   return (
-    <div className="relative min-h-[430px] overflow-hidden rounded-[2rem] border border-white/10 bg-[#071522]/80 p-5 shadow-2xl shadow-cyan-950/40 backdrop-blur-xl lg:min-h-[520px]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_20%,rgba(34,211,238,0.22),transparent_28%),radial-gradient(circle_at_78%_72%,rgba(52,211,153,0.17),transparent_28%)]" />
-      <div className="absolute inset-5 rounded-[1.6rem] border border-cyan-200/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.02))]" />
+    <div className="relative overflow-hidden rounded-[2rem] border border-white/10 bg-[#071522]/85 p-4 shadow-2xl shadow-cyan-950/40 backdrop-blur-xl sm:p-5">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_10%,rgba(34,211,238,0.18),transparent_30%),radial-gradient(circle_at_85%_20%,rgba(59,130,246,0.14),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.08),rgba(255,255,255,0.025))]" />
+      <div className="network-scan absolute inset-x-6 top-0 h-24 rounded-full bg-cyan-200/10 blur-2xl" />
 
-      <svg className="absolute inset-0 h-full w-full opacity-90" viewBox="0 0 520 520" fill="none" aria-hidden="true">
-        <path className="fiber-line" d="M78 148 C154 72 258 82 336 140 S438 236 396 334 S238 452 122 352" />
-        <path className="fiber-line fiber-line-delay" d="M98 340 C172 274 218 250 286 278 S386 316 446 242" />
-        <path className="fiber-line fiber-line-slow" d="M148 92 C210 184 252 192 340 188 S424 202 468 132" />
-        <path className="fiber-line fiber-line-delay" d="M64 246 C142 212 210 220 260 260 S338 394 458 378" />
-      </svg>
-
-      {nodes.map((position, index) => (
-        <div key={position} className={`absolute ${position} fiber-node`} style={{ animationDelay: `${index * 260}ms` }}>
-          <span className="absolute inset-0 rounded-full bg-cyan-300/25 blur-md" />
-          <span className="relative block h-3 w-3 rounded-full bg-cyan-200 shadow-[0_0_24px_rgba(103,232,249,0.95)]" />
-        </div>
-      ))}
-
-      <div className="absolute left-6 top-6 rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 backdrop-blur-md">
-        <p className="text-xs uppercase tracking-[0.24em] text-cyan-100/70">Network load</p>
-        <p className="mt-1 text-2xl font-black text-white">99.9%</p>
-      </div>
-
-      <div className="absolute bottom-6 left-6 right-6 rounded-3xl border border-white/10 bg-slate-950/55 p-5 backdrop-blur-xl">
-        <div className="flex items-center justify-between gap-4">
+      <div className="relative rounded-[1.6rem] border border-white/10 bg-slate-950/55 p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-emerald-200/70">Live fiber route</p>
-            <h3 className="mt-2 text-xl font-black text-white">Bharuch home network</h3>
+            <p className="text-xs font-bold uppercase tracking-[0.24em] text-cyan-100/65">Live Fiber Experience</p>
+            <h3 className="mt-3 text-2xl font-black tracking-[-0.03em] text-white sm:text-3xl">Connection command center</h3>
           </div>
-          <div className="rounded-2xl bg-emerald-400/10 p-3 text-emerald-200 ring-1 ring-emerald-300/20">
-            <Cable size={26} />
+          <div className="rounded-2xl border border-emerald-300/20 bg-emerald-300/10 px-3 py-2 text-xs font-black text-emerald-100">
+            Network ready
           </div>
         </div>
-        <div className="mt-5 grid grid-cols-3 gap-3 text-center text-xs text-slate-300">
-          {['Low latency', 'Local support', 'Fast setup'].map(item => (
-            <span key={item} className="rounded-full border border-white/10 bg-white/[0.05] px-3 py-2">{item}</span>
+
+        <div className="mt-7 rounded-[1.5rem] border border-cyan-200/10 bg-cyan-300/[0.06] p-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="text-sm font-semibold text-slate-400">Peak plan speed</p>
+              <div className="mt-2 flex items-end gap-2">
+                <span className="text-6xl font-black leading-none tracking-[-0.07em] text-white sm:text-7xl">300</span>
+                <span className="pb-2 text-xl font-black text-cyan-100">Mbps</span>
+              </div>
+            </div>
+            <div className="rounded-2xl bg-cyan-300/10 p-4 text-cyan-100 ring-1 ring-cyan-200/15">
+              <Gauge size={34} />
+            </div>
+          </div>
+          <div className="mt-5 h-2 overflow-hidden rounded-full bg-slate-950/70">
+            <div className="h-full w-[86%] rounded-full bg-gradient-to-r from-cyan-300 via-blue-300 to-emerald-300 shadow-[0_0_24px_rgba(34,211,238,0.45)]" />
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-3 gap-3">
+          {networkStats.map(stat => (
+            <div key={stat.label} className="rounded-2xl border border-white/10 bg-white/[0.045] p-4">
+              <p className={`text-lg font-black ${stat.tone}`}>{stat.value}</p>
+              <p className="mt-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">{stat.label}</p>
+            </div>
           ))}
+        </div>
+
+        <div className="mt-4 rounded-[1.5rem] border border-white/10 bg-white/[0.04] p-4">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-slate-500">Service workflow</p>
+              <p className="mt-1 text-sm font-bold text-white">New connection tracking</p>
+            </div>
+            <RadioTower size={22} className="text-cyan-100" />
+          </div>
+
+          <div className="space-y-3">
+            {workflow.map((step, index) => {
+              const isLast = index === workflow.length - 1;
+
+              return (
+                <div key={step} className="flex items-center gap-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full border border-cyan-200/15 bg-cyan-300/10 text-cyan-100">
+                    {isLast ? <Clock3 size={15} /> : <CheckCircle2 size={15} />}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="truncate text-sm font-bold text-slate-100">{step}</p>
+                      <span className="text-xs font-semibold text-slate-500">{isLast ? 'Next' : 'Done'}</span>
+                    </div>
+                    {!isLast && <div className="mt-2 h-px bg-gradient-to-r from-cyan-200/35 to-transparent" />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
@@ -167,7 +208,7 @@ export default function HomeClient() {
             </div>
           </div>
 
-          <FiberHeroVisual />
+          <NetworkCommandPanel />
         </div>
       </section>
 

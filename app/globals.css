@@ -77,40 +77,17 @@
   }
 }
 
-.fiber-line {
-  stroke: rgba(103, 232, 249, 0.78);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-dasharray: 12 18;
-  filter: drop-shadow(0 0 12px rgba(34, 211, 238, 0.72));
-  animation: fiber-dash 7s linear infinite;
+.network-scan {
+  animation: network-scan 4.8s ease-in-out infinite;
 }
 
-.fiber-line-delay {
-  animation-delay: -2.2s;
-}
-
-.fiber-line-slow {
-  animation-duration: 10s;
-}
-
-.fiber-node {
-  animation: fiber-node-pulse 2.8s ease-in-out infinite;
-}
-
-@keyframes fiber-dash {
-  to {
-    stroke-dashoffset: -240;
-  }
-}
-
-@keyframes fiber-node-pulse {
+@keyframes network-scan {
   0%, 100% {
-    transform: scale(1);
-    opacity: 0.8;
+    transform: translateY(-40%) scaleX(0.82);
+    opacity: 0.2;
   }
   50% {
-    transform: scale(1.35);
-    opacity: 1;
+    transform: translateY(235%) scaleX(1.08);
+    opacity: 0.42;
   }
 }
