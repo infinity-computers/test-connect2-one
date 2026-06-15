@@ -16,6 +16,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { motion, useReducedMotion, useScroll, useTransform } from 'motion/react';
+import { useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { activeSubscription, paymentHistory } from '../../data/mockSubscriptions';
 import { plans } from '../../data/mockPlans';
@@ -50,11 +52,56 @@ const featureCards = [
 ];
 
 const processSteps = [
-  { title: 'Choose plan', desc: 'Compare speeds, durations, and FUP details.' },
-  { title: 'Book request', desc: 'Submit your new connection details securely.' },
-  { title: 'Feasibility check', desc: 'Our local team verifies installation scope.' },
-  { title: 'Go online', desc: 'Installation and activation are completed by the local team.' },
+  { title: 'Choose Plan', desc: 'Compare speeds, durations, and FUP details.' },
+  { title: 'Book Request', desc: 'Submit your new connection details securely.' },
+  { title: 'Feasibility Check', desc: 'Our local team verifies installation scope.' },
+  { title: 'Go Online', desc: 'Installation and activation are completed by the local team.' },
 ];
+
+function ConnectionProcessTimeline({ onNavigate }: { onNavigate: (path: string) => void }) {
+  const timelineRef = useRef<HTMLDivElement>(null);
+  const shouldReduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: timelineRef,
+    offset: ['start 72%', 'end 42%'],
+  });
+  const lineScale = useTransform(scrollYProgress, [0, 1], [0, 1]);
+
+  return (
+    <div>
+      <div ref={timelineRef} className="relative rounded-[1.75rem] border border-sky-200/10 bg-slate-950/45 p-4 shadow-xl shadow-slate-950/20 backdrop-blur sm:p-5">
+        <div className="absolute bottom-8 left-[29px] top-8 w-px bg-sky-200/10 sm:left-[33px]" />
+        <motion.div
+          className="absolute bottom-8 left-[29px] top-8 w-px origin-top bg-gradient-to-b from-cyan-300 via-sky-300 to-transparent shadow-[0_0_20px_rgba(56,189,248,0.35)] sm:left-[33px]"
+          style={{ scaleY: shouldReduceMotion ? 1 : lineScale }}
+        />
+
+        <div className="space-y-4">
+          {processSteps.map((step, index) => (
+            <div key={step.title} className="relative flex gap-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition hover:border-sky-200/20 hover:bg-white/[0.055]">
+              <div className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cyan-200/25 bg-slate-950 text-xs font-black text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.16)]">
+                {index + 1}
+              </div>
+              <div className="min-w-0 pt-0.5">
+                <h3 className="text-base font-black tracking-[-0.02em] text-white sm:text-lg">{step.title}</h3>
+                <p className="mt-1.5 max-w-xl text-sm leading-6 text-slate-400">{step.desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <button
+        type="button"
+        onClick={() => onNavigate('/plans')}
+        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-cyan-200 sm:w-auto"
+      >
+        Book New Connection <ArrowRight size={16} />
+      </button>
+    </div>
+  );
+}
+
 
 function NetworkCommandPanel() {
   const networkStats = [
@@ -372,33 +419,7 @@ export default function HomeClient() {
                 <p className="text-sm font-bold uppercase tracking-[0.25em] text-cyan-200/75">Connection process</p>
                 <h2 className="mt-4 text-3xl font-black tracking-[-0.04em] text-white sm:text-4xl">From plan selection to installation, every step is visible.</h2>
               </div>
-              <div>
-                <div className="relative rounded-[1.75rem] border border-white/10 bg-slate-950/45 p-5 shadow-xl shadow-slate-950/20 sm:p-6">
-                  <div className="absolute bottom-8 left-[30px] top-8 w-px bg-gradient-to-b from-cyan-200/45 via-cyan-200/18 to-transparent sm:left-[34px]" />
-
-                  <div className="space-y-7">
-                    {processSteps.map((step, index) => (
-                      <div key={step.title} className="relative flex gap-5">
-                        <div className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-cyan-200/25 bg-slate-950 text-sm font-black text-cyan-100 shadow-[0_0_24px_rgba(34,211,238,0.14)]">
-                          {index + 1}
-                        </div>
-                        <div className="min-w-0 border-b border-white/10 pb-6 last:border-b-0 last:pb-0">
-                          <h3 className="text-lg font-black tracking-[-0.02em] text-white">{step.title}</h3>
-                          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">{step.desc}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => onNavigate('/plans')}
-                  className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-cyan-200 sm:w-auto"
-                >
-                  Book New Connection <ArrowRight size={16} />
-                </button>
-              </div>
+              <ConnectionProcessTimeline onNavigate={onNavigate} />
             </div>
           </div>
         </div>
