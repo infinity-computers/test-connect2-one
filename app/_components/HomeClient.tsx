@@ -69,20 +69,21 @@ function ConnectionProcessTimeline({ onNavigate }: { onNavigate: (path: string) 
 
   return (
     <div>
-      <div ref={timelineRef} className="relative rounded-[1.75rem] border border-sky-200/10 bg-slate-950/45 p-4 shadow-xl shadow-slate-950/20 backdrop-blur sm:p-5">
-        <div className="absolute bottom-8 left-[29px] top-8 w-px bg-sky-200/10 sm:left-[33px]" />
+      <div ref={timelineRef} className="relative py-2 pl-1 sm:pl-2">
+        <div className="absolute bottom-12 left-[23px] top-8 w-[3px] rounded-full bg-sky-200/10 sm:left-[27px]" />
         <motion.div
-          className="absolute bottom-8 left-[29px] top-8 w-px origin-top bg-gradient-to-b from-cyan-300 via-sky-300 to-transparent shadow-[0_0_20px_rgba(56,189,248,0.35)] sm:left-[33px]"
+          className="absolute bottom-12 left-[23px] top-8 w-[3px] origin-top rounded-full bg-gradient-to-b from-cyan-200 via-sky-300 to-cyan-500/20 shadow-[0_0_26px_rgba(56,189,248,0.65)] sm:left-[27px]"
           style={{ scaleY: shouldReduceMotion ? 1 : lineScale }}
         />
 
-        <div className="space-y-4">
+        <div className="space-y-6">
           {processSteps.map((step, index) => (
-            <div key={step.title} className="relative flex gap-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4 transition hover:border-sky-200/20 hover:bg-white/[0.055]">
-              <div className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-cyan-200/25 bg-slate-950 text-xs font-black text-cyan-100 shadow-[0_0_18px_rgba(34,211,238,0.16)]">
-                {index + 1}
+            <div key={step.title} className="group relative flex gap-5 sm:gap-6">
+              <div className="relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-cyan-200/45 bg-[#061827] text-sm font-black text-cyan-100 shadow-[0_0_28px_rgba(34,211,238,0.28)] ring-4 ring-cyan-300/5 transition duration-300 group-hover:border-cyan-100/70 group-hover:shadow-[0_0_38px_rgba(34,211,238,0.42)] sm:h-14 sm:w-14">
+                <span className="absolute inset-1 rounded-full bg-cyan-300/10 blur-sm" />
+                <span className="relative">{index + 1}</span>
               </div>
-              <div className="min-w-0 pt-0.5">
+              <div className="min-w-0 flex-1 rounded-2xl border border-sky-200/10 bg-white/[0.028] px-4 py-4 shadow-lg shadow-slate-950/10 backdrop-blur transition duration-300 group-hover:border-cyan-200/25 group-hover:bg-white/[0.045] group-hover:shadow-cyan-950/20 sm:px-5">
                 <h3 className="text-base font-black tracking-[-0.02em] text-white sm:text-lg">{step.title}</h3>
                 <p className="mt-1.5 max-w-xl text-sm leading-6 text-slate-400">{step.desc}</p>
               </div>
@@ -94,7 +95,7 @@ function ConnectionProcessTimeline({ onNavigate }: { onNavigate: (path: string) 
       <button
         type="button"
         onClick={() => onNavigate('/plans')}
-        className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-cyan-200 sm:w-auto"
+        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 transition hover:-translate-y-0.5 hover:bg-cyan-200 sm:ml-20 sm:w-auto"
       >
         Book New Connection <ArrowRight size={16} />
       </button>
