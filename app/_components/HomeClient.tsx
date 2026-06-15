@@ -164,7 +164,7 @@ export default function HomeClient() {
   return (
     <div className="min-h-screen overflow-hidden bg-[#030913] pt-16 text-white">
       <section className="relative overflow-hidden border-b border-white/10">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(34,211,238,0.20),transparent_34%),radial-gradient(circle_at_86%_12%,rgba(59,130,246,0.20),transparent_32%),linear-gradient(135deg,#030913_0%,#071527_48%,#020617_100%)]" />
+        <div className="hero-premium-glow absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(34,211,238,0.20),transparent_34%),radial-gradient(circle_at_86%_12%,rgba(59,130,246,0.20),transparent_32%),linear-gradient(135deg,#030913_0%,#071527_48%,#020617_100%)]" />
         <div className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(255,255,255,0.9)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.9)_1px,transparent_1px)] [background-size:72px_72px]" />
         <div className="absolute left-1/2 top-0 h-px w-[70vw] -translate-x-1/2 bg-gradient-to-r from-transparent via-cyan-300/70 to-transparent" />
 
