@@ -373,30 +373,22 @@ export default function HomeClient() {
                 <h2 className="mt-4 text-3xl font-black tracking-[-0.04em] text-white sm:text-4xl">From plan selection to installation, every step is visible.</h2>
               </div>
               <div>
-                <div className="relative grid gap-4 sm:grid-cols-2">
-                  <div className="absolute left-5 top-6 bottom-6 w-px bg-gradient-to-b from-cyan-200/45 via-cyan-200/20 to-transparent sm:hidden" />
-                  <div className="pointer-events-none absolute left-[25%] right-[25%] top-[32px] hidden h-px bg-gradient-to-r from-cyan-200/35 via-emerald-200/30 to-cyan-200/35 sm:block" />
-                  <div className="pointer-events-none absolute bottom-[32px] left-[25%] right-[25%] hidden h-px bg-gradient-to-r from-cyan-200/35 via-emerald-200/30 to-cyan-200/35 sm:block" />
-                  <div className="pointer-events-none absolute bottom-[32px] right-[25%] top-[32px] hidden w-px bg-gradient-to-b from-cyan-200/25 via-emerald-200/25 to-cyan-200/25 sm:block" />
+                <div className="relative rounded-[1.75rem] border border-white/10 bg-slate-950/45 p-5 shadow-xl shadow-slate-950/20 sm:p-6">
+                  <div className="absolute bottom-8 left-[30px] top-8 w-px bg-gradient-to-b from-cyan-200/45 via-cyan-200/18 to-transparent sm:left-[34px]" />
 
-                  {processSteps.map((step, index) => {
-                    const isLast = index === processSteps.length - 1;
-
-                    return (
-                      <div key={step.title} className="relative rounded-2xl border border-white/10 bg-slate-950/50 p-5 pl-16 shadow-lg shadow-slate-950/20 transition hover:border-cyan-200/25 sm:pl-5">
-                        <div className="absolute left-0 top-6 z-10 flex h-10 w-10 -translate-x-0 items-center justify-center rounded-full border border-cyan-200/30 bg-cyan-300 text-sm font-black text-slate-950 shadow-[0_0_24px_rgba(34,211,238,0.24)] sm:static sm:mb-4 sm:translate-x-0">
+                  <div className="space-y-7">
+                    {processSteps.map((step, index) => (
+                      <div key={step.title} className="relative flex gap-5">
+                        <div className="relative z-10 flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-cyan-200/25 bg-slate-950 text-sm font-black text-cyan-100 shadow-[0_0_24px_rgba(34,211,238,0.14)]">
                           {index + 1}
                         </div>
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h3 className="text-lg font-black text-white">{step.title}</h3>
-                            <p className="mt-2 text-sm leading-6 text-slate-400">{step.desc}</p>
-                          </div>
-                          {!isLast && <span className="hidden rounded-full border border-cyan-200/15 bg-cyan-300/10 px-2 py-1 text-[10px] font-black uppercase tracking-[0.16em] text-cyan-100 sm:inline-flex">Next</span>}
+                        <div className="min-w-0 border-b border-white/10 pb-6 last:border-b-0 last:pb-0">
+                          <h3 className="text-lg font-black tracking-[-0.02em] text-white">{step.title}</h3>
+                          <p className="mt-2 max-w-xl text-sm leading-6 text-slate-400">{step.desc}</p>
                         </div>
                       </div>
-                    );
-                  })}
+                    ))}
+                  </div>
                 </div>
 
                 <button
