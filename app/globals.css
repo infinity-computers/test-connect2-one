@@ -70,3 +70,47 @@
     line-height: 1.65;
   }
 }
+
+@layer utilities {
+  .text-slate-350 {
+    color: #b8c5d6;
+  }
+}
+
+.fiber-line {
+  stroke: rgba(103, 232, 249, 0.78);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-dasharray: 12 18;
+  filter: drop-shadow(0 0 12px rgba(34, 211, 238, 0.72));
+  animation: fiber-dash 7s linear infinite;
+}
+
+.fiber-line-delay {
+  animation-delay: -2.2s;
+}
+
+.fiber-line-slow {
+  animation-duration: 10s;
+}
+
+.fiber-node {
+  animation: fiber-node-pulse 2.8s ease-in-out infinite;
+}
+
+@keyframes fiber-dash {
+  to {
+    stroke-dashoffset: -240;
+  }
+}
+
+@keyframes fiber-node-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.35);
+    opacity: 1;
+  }
+}
