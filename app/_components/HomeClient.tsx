@@ -3,16 +3,23 @@
 import {
   ArrowRight,
   CheckCircle2,
+  CircleDot,
   Clock3,
   Gauge,
   Headphones,
   MapPin,
+  MessageCircle,
+  Minus,
+  Phone,
+  Plus,
   RadioTower,
   RefreshCw,
+  Router,
   Shield,
   Sparkles,
   TicketCheck,
   Wifi,
+  Wrench,
   Zap,
   ClipboardList,
   MapPinned,
@@ -33,6 +40,8 @@ import {
   paymentHistory,
 } from "../../data/mockSubscriptions";
 import { plans } from "../../data/mockPlans";
+import { CoverageSection } from "./LocalCoverageSection";
+import HeroSection from "./HeroSection";
 
 const trustStats = [
   { label: "Fiber speeds", value: "40-300 Mbps" },
@@ -80,6 +89,101 @@ const processSteps = [
 ];
 
 const processStepIcons = [ClipboardList, Send, MapPinned, Wifi];
+
+const coverageHighlights = [
+  {
+    icon: Wrench,
+    title: "Local installation support",
+    desc: "On-ground coordination for Bharuch addresses after your request is booked.",
+  },
+  {
+    icon: Router,
+    title: "Fiber setup coordination",
+    desc: "Plan, router, wiring, and setup details are clarified before activation.",
+  },
+  {
+    icon: TicketCheck,
+    title: "Service request follow-up",
+    desc: "Requests are tracked through the support flow so the next step stays clear.",
+  },
+  {
+    icon: MapPinned,
+    title: "Built for Bharuch homes and businesses",
+    desc: "Local guidance for apartments, shops, offices, and family homes.",
+  },
+];
+
+const coverageStatusItems = [
+  { label: "Plan guidance", left: "24%", top: "31%", icon: ClipboardList },
+  { label: "Feasibility check", left: "76%", top: "31%", icon: MapPinned },
+  { label: "Install follow-up", left: "50%", top: "74%", icon: TicketCheck },
+];
+
+const trustHighlights = [
+  {
+    icon: Shield,
+    title: "Transparent plan details",
+    desc: "Clear speed, FUP, duration, and renewal information before booking.",
+  },
+  {
+    icon: RadioTower,
+    title: "Local technician coordination",
+    desc: "Installation and setup are handled with local follow-up.",
+  },
+  {
+    icon: RefreshCw,
+    title: "Simple renewal and support flow",
+    desc: "Customers can renew plans and raise support requests without confusion.",
+  },
+  {
+    icon: Headphones,
+    title: "Reliable support after booking",
+    desc: "The connection journey does not stop after plan selection.",
+  },
+];
+
+const faqs = [
+  {
+    question: "What is FUP?",
+    answer:
+      "FUP means Fair Usage Policy. It is the monthly high-speed data limit attached to a broadband plan.",
+  },
+  {
+    question: "What happens after my monthly FUP is over?",
+    answer:
+      "After the monthly FUP is used, speed shifts to the post-FUP speed shown for the plan until the next cycle.",
+  },
+  {
+    question: "How long does installation usually take?",
+    answer:
+      "Installation timing depends on address feasibility, wiring scope, and technician scheduling. The local team confirms the next step after booking.",
+  },
+  {
+    question: "Do I need to pay installation charges?",
+    answer:
+      "Installation charges may vary by plan, location, wiring requirement, and feasibility. The team confirms applicable charges before setup.",
+  },
+  {
+    question: "Do I get a router with the connection?",
+    answer:
+      "Router availability depends on the selected plan and setup terms. The team will explain router options before activation.",
+  },
+  {
+    question: "How can I renew my plan?",
+    answer:
+      "You can renew from your subscription dashboard or contact the local support team for renewal guidance.",
+  },
+  {
+    question: "How do I raise a service request?",
+    answer:
+      "Customers can raise a service request through the dashboard or contact local support for help with an active connection.",
+  },
+  {
+    question: "Can I upgrade my plan later?",
+    answer:
+      "Yes, upgrades can be requested later. Availability may depend on the plan, account status, and local feasibility.",
+  },
+];
 
 function ConnectionProcessTimeline({
   onNavigate,
@@ -302,9 +406,10 @@ function NetworkCommandPanel() {
 export default function HomeClient() {
   const router = useRouter();
   const { user } = useAuth();
+  const shouldReduceMotion = Boolean(useReducedMotion());
+  const [activeFaq, setActiveFaq] = useState(0);
   const renewalPlans = plans.filter((p) => p.category === "Budget").slice(0, 3);
   const ecoPlans = plans.filter((p) => p.category === "Eco").slice(0, 3);
-
   const onNavigate = (path: string) => {
     router.push(path);
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -320,65 +425,7 @@ export default function HomeClient() {
 
   return (
     <div className="min-h-screen overflow-hidden bg-[#030913] pt-16 text-white">
-      <section className="relative overflow-hidden border-b border-white/10">
-        <div className="hero-premium-glow absolute inset-0 bg-[radial-gradient(circle_at_16%_18%,rgba(34,211,238,0.20),transparent_34%),radial-gradient(circle_at_86%_12%,rgba(59,130,246,0.20),transparent_32%),linear-gradient(135deg,#030913_0%,#071527_48%,#020617_100%)]" />
-        <div className="absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(255,255,255,0.9)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.9)_1px,transparent_1px)] [background-size:72px_72px]" />
-        <div className="absolute left-1/2 top-0 h-px w-[70vw] -translate-x-1/2 bg-gradient-to-r from-transparent via-cyan-300/70 to-transparent" />
-
-        <div className="relative mx-auto grid max-w-7xl items-center gap-12 px-4 py-20 sm:px-6 md:py-28 lg:grid-cols-[1.02fr_0.98fr] lg:px-8 lg:py-32">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100 shadow-lg shadow-cyan-950/30">
-              <Wifi size={15} /> Bharuch Fiber ISP
-            </div>
-
-            <h1 className="mt-7 max-w-4xl text-5xl font-black leading-[0.95] tracking-[-0.055em] text-white sm:text-6xl lg:text-7xl">
-              Fiber internet that feels fast before the speed test.
-            </h1>
-
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-300 sm:text-xl">
-              Premium home and business broadband plans from 40 to 300 Mbps with
-              transparent pricing, local support, and a clear service workflow
-              for Bharuch.
-            </p>
-
-            <div className="mt-9 flex flex-col gap-3 sm:flex-row">
-              <button
-                onClick={() => onNavigate("/plans")}
-                className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-6 py-4 text-sm font-black text-slate-950 shadow-[0_18px_60px_rgba(34,211,238,0.28)] transition hover:-translate-y-0.5 hover:bg-cyan-200"
-              >
-                Explore Plans{" "}
-                <ArrowRight
-                  size={17}
-                  className="transition group-hover:translate-x-0.5"
-                />
-              </button>
-              <button
-                type="button"
-                onClick={() => onNavigate("/plans")}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-6 py-4 text-sm font-bold text-white backdrop-blur transition hover:-translate-y-0.5 hover:border-cyan-200/40 hover:bg-white/[0.09]"
-              >
-                Book New Connection
-              </button>
-            </div>
-
-            <div className="mt-10 grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
-              {trustStats.map((stat) => (
-                <div
-                  key={stat.label}
-                  className="rounded-2xl border border-white/10 bg-white/[0.05] p-4 backdrop-blur"
-                >
-                  <p className="text-2xl font-black text-white">{stat.value}</p>
-                  <p className="mt-1 text-xs uppercase tracking-[0.18em] text-slate-400">
-                    {stat.label}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <NetworkCommandPanel />
-        </div>
-      </section>
+      <HeroSection onNavigate={onNavigate} />
 
       <section className="relative bg-[#050d18] py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -571,12 +618,12 @@ export default function HomeClient() {
                 <Sparkles size={14} /> Popular starting point
               </div>
               <h2 className="mt-5 text-4xl font-black tracking-[-0.045em] text-white sm:text-5xl">
-                Start with Eco plans, upgrade when your home needs more speed.
+                Start with Eco plans built for everyday internet.
               </h2>
               <p className="mt-5 max-w-xl text-base leading-8 text-slate-400">
-                Eco plans are built for affordable everyday internet, while
-                Budget and Premium tiers give more speed for heavier streaming,
-                gaming, and business usage.
+                Eco plans keep pricing approachable for Bharuch homes and small
+                offices while still showing speed, FUP, duration, and renewal
+                details clearly before booking.
               </p>
             </div>
 
@@ -632,6 +679,212 @@ export default function HomeClient() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* <CoverageSection /> */}
+
+      <section className="relative overflow-hidden bg-[#030913] py-16 sm:py-20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_10%,rgba(34,211,238,0.10),transparent_30%)]" />
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            className="max-w-3xl"
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 24 }}
+            whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.35 }}
+            transition={{ duration: 0.55, ease: "easeOut" }}
+          >
+            <p className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-200/75">
+              Customer trust
+            </p>
+            <h2 className="mt-4 text-3xl font-black tracking-[-0.045em] text-white sm:text-5xl">
+              Why local customers choose Connect One
+            </h2>
+            <p className="mt-5 max-w-2xl text-base leading-8 text-slate-400">
+              No borrowed testimonials. Just the operational details customers
+              look for before choosing a local broadband provider.
+            </p>
+          </motion.div>
+
+          <div className="mt-10 grid gap-4 md:grid-cols-2 lg:gap-5">
+            {trustHighlights.map(({ icon: Icon, title, desc }, index) => (
+              <motion.div
+                key={title}
+                className={`group relative overflow-hidden rounded-[1.8rem] border border-white/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.06),rgba(255,255,255,0.02))] p-5 shadow-xl shadow-slate-950/20 backdrop-blur transition duration-300 hover:-translate-y-1 hover:border-cyan-200/35 hover:shadow-[0_20px_70px_rgba(34,211,238,0.12)] sm:p-6 ${
+                  index % 2 === 1 ? "lg:mt-8" : ""
+                }`}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 26 }}
+                whileInView={
+                  shouldReduceMotion ? undefined : { opacity: 1, y: 0 }
+                }
+                viewport={{ once: true, amount: 0.28 }}
+                transition={{
+                  duration: 0.5,
+                  delay: shouldReduceMotion ? 0 : index * 0.07,
+                  ease: "easeOut",
+                }}
+              >
+                <div className="absolute right-5 top-5 text-5xl font-black tracking-[-0.08em] text-white/[0.035]">
+                  0{index + 1}
+                </div>
+                <div className="relative flex gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-cyan-200/15 bg-cyan-300/10 text-cyan-100 transition group-hover:scale-105 group-hover:bg-cyan-300/15">
+                    <Icon size={22} />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-lg font-black tracking-[-0.02em] text-white">
+                      {title}
+                    </h3>
+                    <p className="mt-3 text-sm leading-7 text-slate-400">
+                      {desc}
+                    </p>
+                  </div>
+                </div>
+                <div className="mt-5 h-px bg-gradient-to-r from-cyan-200/25 via-sky-200/10 to-transparent" />
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="relative overflow-hidden bg-[#050d18] py-16 sm:py-20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.12),transparent_34%)]" />
+        <div className="relative mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <motion.div
+            className="mx-auto max-w-3xl text-center"
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 24 }}
+            whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.35 }}
+            transition={{ duration: 0.55, ease: "easeOut" }}
+          >
+            <p className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-200/75">
+              Plan questions
+            </p>
+            <h2 className="mt-4 text-3xl font-black tracking-[-0.045em] text-white sm:text-5xl">
+              Clear answers before you book.
+            </h2>
+            <p className="mt-5 text-base leading-8 text-slate-400">
+              Short answers for Bharuch customers comparing Eco fiber plans,
+              installation scope, renewals, and support.
+            </p>
+          </motion.div>
+
+          <div className="mt-10 space-y-3">
+            {faqs.map((faq, index) => {
+              const isOpen = activeFaq === index;
+
+              return (
+                <div
+                  key={faq.question}
+                  className={`overflow-hidden rounded-[1.5rem] border backdrop-blur transition duration-300 ${
+                    isOpen
+                      ? "border-cyan-200/35 bg-cyan-300/[0.07] shadow-[0_0_42px_rgba(34,211,238,0.12)]"
+                      : "border-white/10 bg-white/[0.04] hover:border-cyan-200/20 hover:bg-white/[0.055]"
+                  }`}
+                >
+                  <button
+                    type="button"
+                    aria-expanded={isOpen}
+                    onClick={() => setActiveFaq(isOpen ? -1 : index)}
+                    className="flex w-full items-center gap-4 px-4 py-4 text-left sm:px-5 sm:py-5"
+                  >
+                    <span
+                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border text-sm font-black ${
+                        isOpen
+                          ? "border-cyan-200/35 bg-cyan-300/15 text-cyan-100"
+                          : "border-white/10 bg-slate-950/35 text-slate-400"
+                      }`}
+                    >
+                      {String(index + 1).padStart(2, "0")}
+                    </span>
+                    <span className="min-w-0 flex-1 text-base font-black tracking-[-0.015em] text-white sm:text-lg">
+                      {faq.question}
+                    </span>
+                    <span
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition ${
+                        isOpen
+                          ? "border-cyan-200/25 bg-cyan-300/15 text-cyan-100"
+                          : "border-white/10 bg-white/[0.035] text-slate-400"
+                      }`}
+                    >
+                      {isOpen ? <Minus size={17} /> : <Plus size={17} />}
+                    </span>
+                  </button>
+
+                  <motion.div
+                    initial={false}
+                    animate={{
+                      height: isOpen ? "auto" : 0,
+                      opacity: isOpen ? 1 : 0,
+                    }}
+                    transition={{
+                      duration: shouldReduceMotion ? 0 : 0.26,
+                      ease: "easeOut",
+                    }}
+                    className="overflow-hidden"
+                  >
+                    <p className="px-4 pb-5 pl-[72px] text-sm leading-7 text-slate-350 sm:px-5 sm:pb-6 sm:pl-[84px]">
+                      {faq.answer}
+                    </p>
+                  </motion.div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section className="relative bg-[#030913] px-4 py-10 sm:px-6 lg:px-8">
+        <motion.div
+          className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-cyan-200/15 bg-[radial-gradient(circle_at_16%_10%,rgba(34,211,238,0.16),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.075),rgba(255,255,255,0.024))] p-5 shadow-2xl shadow-cyan-950/20 backdrop-blur-xl sm:p-6 lg:p-7"
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+          whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.35 }}
+          transition={{ duration: 0.55, ease: "easeOut" }}
+        >
+          <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="flex gap-4">
+              <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-cyan-200/20 bg-cyan-300/10 text-cyan-100 sm:flex">
+                <Headphones size={25} />
+              </div>
+              <div>
+                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-emerald-100">
+                  <CircleDot size={12} className="fill-emerald-200/40" />
+                  Local support available
+                </div>
+                <h2 className="text-2xl font-black tracking-[-0.035em] text-white sm:text-3xl">
+                  Need help choosing a plan?
+                </h2>
+                <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-350 sm:text-base">
+                  Talk to our local team before booking your connection.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
+              <a
+                href="tel:9974955542"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 shadow-[0_16px_48px_rgba(34,211,238,0.24)] transition hover:-translate-y-0.5 hover:bg-cyan-200"
+              >
+                <Phone size={16} /> Call Now
+              </a>
+              <a
+                href="https://wa.me/919974955542"
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.055] px-5 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:border-cyan-200/35 hover:bg-white/[0.085]"
+              >
+                <MessageCircle size={16} /> WhatsApp
+              </a>
+              <button
+                type="button"
+                onClick={() => onNavigate("/plans")}
+                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-slate-950/35 px-5 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:border-cyan-200/35 hover:bg-white/[0.07]"
+              >
+                View Plans <ArrowRight size={16} />
+              </button>
+            </div>
+          </div>
+        </motion.div>
       </section>
 
       {!user && (
