@@ -60,6 +60,10 @@ export default function SiteNotificationsBanner({
     return notifications.map((n) => `${n.title}: ${n.description}`).join("   •   ");
   }, [notifications]);
 
+  const tickerDurationSeconds = useMemo(() => {
+    return Math.min(42, Math.max(24, tickerText.length * 0.22));
+  }, [tickerText]);
+
   if (!loaded || notifications.length === 0 || !tickerText) {
     return null;
   }
@@ -78,7 +82,10 @@ export default function SiteNotificationsBanner({
           <div className="relative min-w-0 flex-1 overflow-hidden">
             <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-6 bg-gradient-to-r from-cyan-950/85 to-transparent" />
             <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-6 bg-gradient-to-l from-cyan-950/85 to-transparent" />
-            <div className="whitespace-nowrap text-sm text-cyan-100 motion-safe:animate-[notification-ticker_3s_linear_infinite] hover:[animation-play-state:paused]">
+            <div
+              className="whitespace-nowrap text-sm text-cyan-100 motion-safe:animate-[notification-ticker_28s_linear_infinite] hover:[animation-play-state:paused]"
+              style={{ animationDuration: `${tickerDurationSeconds}s` }}
+            >
               <span className="inline-block pr-12">{tickerText}</span>
             </div>
           </div>
