@@ -1,32 +1,30 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { Zap, Star, Check, Tv, Gift, Loader2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import {
+  motion,
+  useMotionValue,
+  useReducedMotion,
+  useScroll,
+  useSpring,
+  useTransform,
+  type Variants,
+} from "framer-motion";
+import {
+  Zap,
+  Star,
+  Check,
+  Tv,
+  Gift,
+  Loader2,
+  Wifi,
+  ArrowRight,
+} from "lucide-react";
 import { plans, PlanCategory, Duration } from "../../../data/mockPlans";
 import { ottPlans } from "../../../data/mockOTT";
 import { useAuth } from "../../../context/AuthContext";
 
-const categoryInfo: Record<
-  PlanCategory,
-  { desc: string; color: string; tag: string }
-> = {
-  Eco: {
-    desc: "Affordable fiber internet with 48–72 working hours resolution. Perfect for everyday browsing.",
-    color: "bg-gradient-to-br from-blue-950 to-cyan-500",
-    tag: "Budget Friendly",
-  },
-  Budget: {
-    desc: "Faster priority support with 24–48 working hours resolution. Best balance of speed and price.",
-    color: "bg-gradient-to-br from-blue-600 to-blue-700",
-    tag: "Priority Support",
-  },
-  Premium: {
-    desc: "VIP priority service with 4–24 working hours resolution. Festival offer discounts available.",
-    color: "bg-gradient-to-br from-blue-950 to-blue-600",
-    tag: "VIP Priority",
-  },
-};
-
+// ─── Types ────────────────────────────────────────────────────────────────────
 type SelectedConnectionPlan = {
   category: string;
   speed: number;
@@ -48,14 +46,71 @@ type ConnectionForm = {
 };
 
 type CashfreeCheckout = {
-  checkout: (options: { paymentSessionId: string; redirectTarget?: "_self" | "_blank" | "_modal" }) => Promise<unknown>;
+  checkout: (options: {
+    paymentSessionId: string;
+    redirectTarget?: "_self" | "_blank" | "_modal";
+  }) => Promise<unknown>;
 };
 
 declare global {
   interface Window {
-    Cashfree?: (options: { mode: "sandbox" | "production" }) => CashfreeCheckout;
+    Cashfree?: (options: {
+      mode: "sandbox" | "production";
+    }) => CashfreeCheckout;
   }
 }
+
+// ─── Constants ────────────────────────────────────────────────────────────────
+const categoryMeta: Record<
+  PlanCategory,
+  { desc: string; tag: string; accent: string; glow: string }
+> = {
+  Eco: {
+    desc: "Solid fiber speeds for everyday browsing, streaming, and staying connected.",
+    tag: "Budget Friendly",
+    accent: "from-cyan-400 to-blue-500",
+    glow: "rgba(34,211,238,0.15)",
+  },
+  Budget: {
+    desc: "Faster priority support. The sweet spot of speed and value for most households.",
+    tag: "Priority Support",
+    accent: "from-blue-400 to-blue-600",
+    glow: "rgba(59,130,246,0.18)",
+  },
+  Premium: {
+    desc: "VIP response times, top-tier speeds, and festival offer discounts when they run.",
+    tag: "VIP Priority",
+    accent: "from-blue-300 to-cyan-400",
+    glow: "rgba(147,197,253,0.15)",
+  },
+};
+
+// "Best for" tags per speed — helps users self-select without reading specs
+const bestFor: Record<number, string> = {
+  40: "Browsing · YouTube · 2–3 devices",
+  60: "HD streaming · Video calls · 3–4 devices",
+  100: "4K streaming · Family use · Video calls",
+  150: "Heavy streaming · WFH · 5+ devices",
+  200: "Gaming · 4K + calls simultaneously",
+  300: "Gaming · Office work · Heavy downloads",
+};
+
+function getBestFor(speed: number): string {
+  // exact match first, then nearest lower
+  if (bestFor[speed]) return bestFor[speed];
+  const keys = Object.keys(bestFor)
+    .map(Number)
+    .sort((a, b) => b - a);
+  const match = keys.find((k) => k <= speed);
+  return match ? bestFor[match] : "High-speed fiber for all use cases";
+}
+
+const durationLabels: Record<string, string> = {
+  "1m": "1 Month",
+  "3m": "3 Months",
+  "6m": "6 Months",
+  "12m": "12 Months",
+};
 
 const initialConnectionForm: ConnectionForm = {
   name: "",
@@ -69,51 +124,239 @@ const initialConnectionForm: ConnectionForm = {
   notes: "",
 };
 
+// Marquee items — social-proof flavour, not spec sheet
+const MARQUEE_ITEMS = [
+  "300+ homes connected in Bharuch",
+  "Zero throttling during peak hours",
+  "Local team picks up the phone",
+  "Same-day technician dispatch",
+  "Router provided with active subscription",
+  "Installation charges apply",
+  "Transparent monthly billing",
+  "40 · 100 · 300 Mbps fiber plans",
+];
+
+// ─── Cashfree loader ──────────────────────────────────────────────────────────
 function loadCashfreeSdk(): Promise<void> {
   return new Promise((resolve, reject) => {
-    if (typeof window === "undefined") return reject(new Error("Checkout is unavailable"));
+    if (typeof window === "undefined")
+      return reject(new Error("Checkout is unavailable"));
     if (window.Cashfree) return resolve();
-
-    const existingScript = document.querySelector<HTMLScriptElement>("script[data-cashfree-sdk]");
-    if (existingScript) {
-      existingScript.addEventListener("load", () => resolve(), { once: true });
-      existingScript.addEventListener("error", () => reject(new Error("Failed to load Cashfree checkout")), { once: true });
+    const existing = document.querySelector<HTMLScriptElement>(
+      "script[data-cashfree-sdk]",
+    );
+    if (existing) {
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener(
+        "error",
+        () => reject(new Error("Failed to load Cashfree checkout")),
+        { once: true },
+      );
       return;
     }
-
-    const script = document.createElement("script");
-    script.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
-    script.async = true;
-    script.dataset.cashfreeSdk = "true";
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Failed to load Cashfree checkout"));
-    document.body.appendChild(script);
+    const s = document.createElement("script");
+    s.src = "https://sdk.cashfree.com/js/v3/cashfree.js";
+    s.async = true;
+    s.dataset.cashfreeSdk = "true";
+    s.onload = () => resolve();
+    s.onerror = () => reject(new Error("Failed to load Cashfree checkout"));
+    document.body.appendChild(s);
   });
 }
 
+// ─── Fiber canvas ─────────────────────────────────────────────────────────────
+function FiberCanvas({ opacity = 0.45 }: { opacity?: number }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current as HTMLCanvasElement;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
+    if (!ctx) return;
+
+    let animId: number;
+    type Node = { x: number; y: number; vx: number; vy: number };
+    let nodes: Node[] = [];
+    let W = 0,
+      H = 0;
+
+    function resize() {
+      const parent = canvas.parentElement;
+      if (!parent) return;
+      W = canvas.width = parent.offsetWidth;
+      H = canvas.height = parent.offsetHeight;
+      nodes = Array.from({ length: 28 }, () => ({
+        x: Math.random() * W,
+        y: Math.random() * H,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+      }));
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, W, H);
+      nodes.forEach((n) => {
+        n.x += n.vx;
+        n.y += n.vy;
+        if (n.x < 0 || n.x > W) n.vx *= -1;
+        if (n.y < 0 || n.y > H) n.vy *= -1;
+      });
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x;
+          const dy = nodes[i].y - nodes[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 160) {
+            const a = (1 - dist / 160) * 0.3;
+            ctx.beginPath();
+            ctx.moveTo(nodes[i].x, nodes[i].y);
+            ctx.lineTo(nodes[j].x, nodes[j].y);
+            ctx.strokeStyle = `rgba(34,211,238,${a})`;
+            ctx.lineWidth = 0.6;
+            ctx.stroke();
+          }
+        }
+      }
+      nodes.forEach((n) => {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, 1.6, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(34,211,238,0.5)";
+        ctx.fill();
+      });
+      animId = requestAnimationFrame(draw);
+    }
+
+    resize();
+    draw();
+    const ro = new ResizeObserver(resize);
+    if (canvas.parentElement) ro.observe(canvas.parentElement);
+    return () => {
+      cancelAnimationFrame(animId);
+      ro.disconnect();
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{ opacity }}
+      className="pointer-events-none absolute inset-0 h-full w-full"
+    />
+  );
+}
+
+// ─── Marquee ticker ───────────────────────────────────────────────────────────
+function Marquee() {
+  const shouldReduceMotion = useReducedMotion();
+  const items = [...MARQUEE_ITEMS, ...MARQUEE_ITEMS]; // duplicate for seamless loop
+
+  if (shouldReduceMotion) return null;
+
+  return (
+    <div className="absolute bottom-0 left-0 right-0 overflow-hidden border-t border-white/[0.06] bg-white/[0.03] backdrop-blur-sm py-2.5">
+      <motion.div
+        animate={{ x: ["0%", "-50%"] }}
+        transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
+        className="flex w-max gap-8 whitespace-nowrap"
+      >
+        {items.map((item, i) => (
+          <span key={i} className="flex items-center gap-8">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+              {item}
+            </span>
+            <span className="text-cyan-400/60 text-xs">•</span>
+          </span>
+        ))}
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Tilt card wrapper ────────────────────────────────────────────────────────
+function TiltCard({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  const shouldReduceMotion = useReducedMotion();
+  const ref = useRef<HTMLDivElement>(null);
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+  const rotateX = useSpring(useTransform(y, [-0.5, 0.5], [6, -6]), {
+    stiffness: 300,
+    damping: 30,
+  });
+  const rotateY = useSpring(useTransform(x, [-0.5, 0.5], [-6, 6]), {
+    stiffness: 300,
+    damping: 30,
+  });
+
+  function onMouseMove(e: React.MouseEvent<HTMLDivElement>) {
+    const rect = ref.current?.getBoundingClientRect();
+    if (!rect) return;
+    x.set((e.clientX - rect.left) / rect.width - 0.5);
+    y.set((e.clientY - rect.top) / rect.height - 0.5);
+  }
+
+  function onMouseLeave() {
+    x.set(0);
+    y.set(0);
+  }
+
+  return (
+    <motion.div
+      ref={ref}
+      onMouseMove={onMouseMove}
+      onMouseLeave={onMouseLeave}
+      style={
+        shouldReduceMotion
+          ? { transformStyle: "preserve-3d" }
+          : { rotateX, rotateY, transformStyle: "preserve-3d" }
+      }
+      whileHover={shouldReduceMotion ? undefined : { y: -6 }}
+      transition={{ type: "spring", stiffness: 260, damping: 24 }}
+      className={className}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function PlansClient() {
   const { user } = useAuth();
+  const shouldReduceMotion = useReducedMotion();
+  const { scrollYProgress } = useScroll();
+  const backgroundY = useTransform(scrollYProgress, [0, 1], [0, -90]);
+  const backgroundGlow = useTransform(
+    scrollYProgress,
+    [0, 0.45, 1],
+    [0.28, 0.5, 0.34],
+  );
+
   const [activeCategory, setActiveCategory] = useState<PlanCategory>("Eco");
   const [selectedDuration, setSelectedDuration] = useState<"3m" | "6m" | "12m">(
     "12m",
   );
   const [showConnectionModal, setShowConnectionModal] = useState(false);
-  const [selectedConnectionPlan, setSelectedConnectionPlan] = useState<SelectedConnectionPlan | null>(null);
-  const [connectionForm, setConnectionForm] = useState<ConnectionForm>(initialConnectionForm);
+  const [selectedConnectionPlan, setSelectedConnectionPlan] =
+    useState<SelectedConnectionPlan | null>(null);
+  const [connectionForm, setConnectionForm] = useState<ConnectionForm>(
+    initialConnectionForm,
+  );
   const [connectionError, setConnectionError] = useState("");
   const [processingConnection, setProcessingConnection] = useState(false);
   const [showCashfreeTestPlan, setShowCashfreeTestPlan] = useState(false);
 
   const filtered = plans.filter((p) => p.category === activeCategory);
-  const durationLabels: Record<string, string> = {
-    "1m": "1 Month",
-    "3m": "3 Months",
-    "6m": "6 Months",
-    "12m": "12 Months",
-  };
+  const meta = categoryMeta[activeCategory];
 
   useEffect(() => {
-    setShowCashfreeTestPlan(new URLSearchParams(window.location.search).get("cashfreeTest") === "1");
+    setShowCashfreeTestPlan(
+      new URLSearchParams(window.location.search).get("cashfreeTest") === "1",
+    );
   }, []);
 
   const openConnectionModal = (plan: SelectedConnectionPlan) => {
@@ -121,20 +364,17 @@ export default function PlansClient() {
     setConnectionError("");
     setShowConnectionModal(true);
   };
-
   const openOttContactModal = () => {
     setSelectedConnectionPlan(null);
     setConnectionError("");
     setShowConnectionModal(true);
   };
-
   const closeConnectionModal = () => {
     if (processingConnection) return;
     setShowConnectionModal(false);
     setSelectedConnectionPlan(null);
     setConnectionError("");
   };
-
   const updateConnectionForm = (field: keyof ConnectionForm, value: string) => {
     setConnectionForm((prev) => ({ ...prev, [field]: value }));
     setConnectionError("");
@@ -142,16 +382,20 @@ export default function PlansClient() {
 
   const handleNewConnectionPayment = async () => {
     if (!selectedConnectionPlan) return;
-
     setConnectionError("");
-
-    const requiredFields: (keyof ConnectionForm)[] = ["name", "phone", "email", "address", "city", "state", "pinCode"];
-    const missingField = requiredFields.find((field) => !connectionForm[field].trim());
-    if (missingField) {
+    const required: (keyof ConnectionForm)[] = [
+      "name",
+      "phone",
+      "email",
+      "address",
+      "city",
+      "state",
+      "pinCode",
+    ];
+    if (required.find((f) => !connectionForm[f].trim())) {
       setConnectionError("Please fill all required fields before payment.");
       return;
     }
-
     setProcessingConnection(true);
     try {
       const res = await fetch("/api/new-connections/create-checkout", {
@@ -161,29 +405,19 @@ export default function PlansClient() {
           planName: selectedConnectionPlan.category,
           speedMbps: selectedConnectionPlan.speed,
           durationMonths: selectedConnectionPlan.months,
-          name: connectionForm.name.trim(),
-          phone: connectionForm.phone.trim(),
-          email: connectionForm.email.trim(),
-          address: connectionForm.address.trim(),
-          city: connectionForm.city.trim(),
-          state: connectionForm.state.trim(),
-          pinCode: connectionForm.pinCode.trim(),
-          landmark: connectionForm.landmark.trim(),
-          notes: connectionForm.notes.trim(),
+          ...Object.fromEntries(
+            Object.entries(connectionForm).map(([k, v]) => [k, v.trim()]),
+          ),
         }),
       });
-
       const data = await res.json();
       if (!res.ok) {
         setConnectionError(data.error || "Failed to start payment.");
         return;
       }
-
       await loadCashfreeSdk();
-      if (!window.Cashfree) {
+      if (!window.Cashfree)
         throw new Error("Cashfree checkout failed to initialize");
-      }
-
       const cashfree = window.Cashfree({ mode: data.mode || "sandbox" });
       await cashfree.checkout({
         paymentSessionId: data.paymentSessionId,
@@ -191,389 +425,735 @@ export default function PlansClient() {
       });
     } catch (err) {
       console.error("New connection payment error:", err);
-      setConnectionError("Something went wrong while starting payment. Please try again.");
+      setConnectionError(
+        "Something went wrong while starting payment. Please try again.",
+      );
     } finally {
       setProcessingConnection(false);
     }
   };
 
+  const fadeUp: Variants = {
+    hidden: { opacity: 0, y: 24 },
+    show: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.55,
+        delay: i * 0.08,
+        ease: [0.22, 1, 0.36, 1] as const,
+      },
+    }),
+  };
+
   return (
-    <div className="pt-16 bg-slate-950 min-h-screen">
-      {/* Header */}
-      <div className="bg-gradient-to-br from-blue-900 to-blue-700 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 bg-slate-800/50 rounded-full px-3 py-1 mb-4">
-            <Zap size={13} className="text-cyan-300" />
-            <span className="text-xs text-slate-300">
-              Transparent Pricing, No Hidden Charges
+    <div
+      className="min-h-screen pt-16"
+      style={{
+        background:
+          "linear-gradient(135deg,#030913 0%,#071527 48%,#020617 100%)",
+      }}
+    >
+      {/* ── Page header ── */}
+      <div className="relative overflow-hidden border-b border-white/10 pb-14">
+        <div
+          className="absolute inset-0"
+          style={{
+            background: `radial-gradient(circle at 20% 50%, ${meta.glow}, transparent 60%),
+                         radial-gradient(circle at 80% 20%, rgba(59,130,246,0.12), transparent 50%)`,
+          }}
+        />
+        <div className="absolute left-1/2 top-0 h-px w-[60vw] -translate-x-1/2 bg-gradient-to-r from-transparent via-cyan-300/60 to-transparent" />
+        <FiberCanvas opacity={0.35} />
+
+        <div className="relative mx-auto max-w-7xl px-4 pt-16 pb-10 sm:px-6 lg:px-8 text-center">
+          {/* Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.22em] text-cyan-100 mb-6"
+          >
+            <span className="h-2 w-2 rounded-full bg-cyan-300 animate-pulse shadow-[0_0_8px_3px_rgba(34,211,238,0.45)]" />
+            <Wifi size={13} />
+            Transparent Pricing · No Hidden Charges
+          </motion.div>
+
+          {/* Headline */}
+          <motion.h1
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
+            className="text-4xl font-black tracking-[-0.04em] text-white sm:text-5xl lg:text-6xl"
+          >
+            Broadband{" "}
+            <span
+              className={`bg-gradient-to-r ${meta.accent} bg-clip-text text-transparent`}
+            >
+              Plans
             </span>
-          </div>
-          <h1 className="heading-rhythm text-4xl font-bold mb-3">
-            Broadband Plans
-          </h1>
-          <p className="copy-rhythm text-slate-400 max-w-lg mx-auto">
-            Choose from Eco, Budget, or Premium plans with speeds up to 300
-            Mbps. All plans include a 3.5 TB/month FUP with 2 Mbps post-FUP speed.
-          </p>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.55, delay: 0.2 }}
+            className="mt-4 text-slate-400 max-w-md mx-auto text-base leading-7"
+          >
+            Fiber speeds from 40 to 300 Mbps for Bharuch homes and businesses.
+          </motion.p>
+
+          {/* CTAs */}
+          <motion.div
+            initial={{ opacity: 0, y: 14 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3"
+          >
+            <button
+              type="button"
+              onClick={
+                () =>
+                  setShowConnectionModal(
+                    true,
+                  ) /* or route to availability check */
+              }
+              className="group inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-6 py-3.5 text-sm font-black text-slate-950 shadow-[0_14px_50px_rgba(34,211,238,0.28)] transition hover:-translate-y-0.5 hover:bg-cyan-200 hover:shadow-[0_18px_60px_rgba(34,211,238,0.38)]"
+            >
+              Check Availability
+              <ArrowRight
+                size={16}
+                className="transition group-hover:translate-x-0.5"
+              />
+            </button>
+            <a
+              href="#plans"
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/[0.1] bg-white/[0.06] px-6 py-3.5 text-sm font-bold text-white backdrop-blur transition hover:-translate-y-0.5 hover:border-cyan-200/30 hover:bg-white/[0.09]"
+            >
+              View Plans
+            </a>
+          </motion.div>
         </div>
+
+        {/* Marquee ticker */}
+        <Marquee />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {/* Category Tabs */}
-        <div className="flex justify-center mb-8">
-          <div className="bg-slate-900 rounded-2xl p-1.5 shadow-sm border border-slate-700 flex gap-1">
-            {(["Eco", "Budget", "Premium"] as PlanCategory[]).map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 ${
-                  activeCategory === cat
-                    ? cat === "Premium"
-                      ? "bg-gradient-to-r from-blue-950 to-blue-600 text-white shadow-sm"
-                      : cat === "Budget"
-                        ? "bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-sm"
-                        : "bg-gradient-to-r from-blue-950 to-cyan-500 text-white shadow-sm"
-                    : "text-slate-300 hover:text-slate-100 hover:bg-slate-950"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
-        </div>
+      {/* ── Body ── */}
+      <div className="relative overflow-hidden">
+        {/* Ambient glows */}
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute left-1/2 top-10 h-[32rem] w-[32rem] -translate-x-1/2 rounded-full bg-cyan-300/[0.055] blur-3xl"
+          style={
+            shouldReduceMotion
+              ? undefined
+              : { y: backgroundY, opacity: backgroundGlow }
+          }
+        />
+        <motion.div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-28 top-[34rem] h-[26rem] w-[26rem] rounded-full bg-blue-400/[0.05] blur-3xl"
+          style={shouldReduceMotion ? undefined : { y: backgroundY }}
+        />
 
-        {/* Category Info */}
         <div
-          className={`${categoryInfo[activeCategory].color} rounded-2xl p-5 mb-8 text-white flex flex-col sm:flex-row sm:items-center gap-3`}
+          className="relative mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"
+          id="plans"
         >
-          <div className="flex-1">
-            <span className="inline-block bg-slate-800/70 text-white text-xs font-semibold px-2.5 py-1 rounded-full mb-2">
-              {categoryInfo[activeCategory].tag}
-            </span>
-            <p className="text-sm leading-relaxed opacity-90">
-              {categoryInfo[activeCategory].desc}
-            </p>
-          </div>
-          {activeCategory === "Premium" && (
-            <div className="flex items-center gap-2 bg-slate-800/60 rounded-xl px-4 py-2 shrink-0">
-              <Star size={14} className="text-yellow-300 fill-yellow-300" />
-              <span className="text-sm font-semibold">
-                Festival Offers Available
-              </span>
+          {/* ── Category tabs ── */}
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.45, delay: 0.25 }}
+            className="flex justify-center mb-8"
+          >
+            <div className="flex gap-1 rounded-2xl border border-white/[0.06] bg-white/[0.03] p-1.5 backdrop-blur">
+              {(["Eco", "Budget", "Premium"] as PlanCategory[]).map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={[
+                    "relative px-6 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/60 focus-visible:ring-offset-2 focus-visible:ring-offset-[#061321]",
+                    activeCategory === cat
+                      ? "text-slate-950"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.045]",
+                  ].join(" ")}
+                >
+                  {activeCategory === cat && (
+                    <motion.span
+                      layoutId="cat-pill"
+                      className={`absolute inset-0 rounded-xl bg-gradient-to-r ${categoryMeta[cat].accent}`}
+                      transition={{
+                        type: "spring",
+                        stiffness: 380,
+                        damping: 30,
+                      }}
+                    />
+                  )}
+                  <span className="relative z-10">{cat}</span>
+                </button>
+              ))}
             </div>
-          )}
-        </div>
+          </motion.div>
 
-        {/* Duration Toggle */}
-        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
-          <h2 className="text-xl font-bold text-slate-100">
-            {activeCategory} Plans
-          </h2>
-          <div className="bg-slate-900 rounded-xl p-1 border border-slate-700 shadow-sm flex gap-1">
-            {(["3m", "6m", "12m"] as const).map((d) => (
-              <button
-                key={d}
-                onClick={() => setSelectedDuration(d)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${selectedDuration === d ? "bg-blue-500 text-white shadow-sm" : "text-slate-300 hover:text-slate-100"}`}
+          {/* ── Category info banner ── */}
+          <motion.div
+            key={activeCategory}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.4 }}
+            className="mb-8 rounded-2xl border border-white/[0.06] bg-white/[0.04] backdrop-blur px-5 py-4 flex flex-col sm:flex-row sm:items-center gap-3 transition-colors hover:border-cyan-200/15 hover:bg-white/[0.055]"
+          >
+            <div className="flex-1">
+              <span
+                className={`inline-block bg-gradient-to-r ${meta.accent} text-slate-950 text-[11px] font-bold px-2.5 py-0.5 rounded-full mb-2`}
               >
-                {durationLabels[d]}
-              </button>
-            ))}
+                {meta.tag}
+              </span>
+              <p className="text-sm text-slate-300 leading-relaxed">
+                {meta.desc}
+              </p>
+            </div>
+            {activeCategory === "Premium" && (
+              <div className="flex items-center gap-2 rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-4 py-2 shrink-0">
+                <Star size={14} className="text-yellow-300 fill-yellow-300" />
+                <span className="text-sm font-semibold text-yellow-200">
+                  Festival Offers Available
+                </span>
+              </div>
+            )}
+          </motion.div>
+
+          {/* ── Duration toggle ── */}
+          <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+            <h2 className="text-xl font-bold text-white">
+              {activeCategory} Plans
+            </h2>
+            <div className="flex gap-1 rounded-xl border border-white/[0.06] bg-white/[0.03] p-1 backdrop-blur">
+              {(["3m", "6m", "12m"] as const).map((d) => (
+                <button
+                  key={d}
+                  onClick={() => setSelectedDuration(d)}
+                  className={[
+                    "relative px-4 py-1.5 rounded-lg text-sm font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50",
+                    selectedDuration === d
+                      ? "text-white"
+                      : "text-slate-400 hover:text-slate-200 hover:bg-white/[0.04]",
+                  ].join(" ")}
+                >
+                  {selectedDuration === d && (
+                    <motion.span
+                      layoutId="dur-pill"
+                      className="absolute inset-0 rounded-lg bg-cyan-300/20 border border-cyan-300/30"
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 30,
+                      }}
+                    />
+                  )}
+                  <span className="relative z-10">{durationLabels[d]}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
 
-        {/* Plan Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-14">
-          {filtered.map((plan) => {
-            const variant = plan.variants.find(
-              (v) => v.duration === selectedDuration,
-            )!;
-            const isPopular = plan.badge === "Popular";
-            return (
-              <div
-                key={plan.id}
-                className={`relative bg-slate-900 rounded-2xl border-2 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 overflow-hidden ${isPopular ? "border-blue-500 shadow-md" : "border-slate-800"}`}
-              >
-                {plan.badge && (
-                  <div
-                    className={`absolute top-0 right-0 ${isPopular ? "bg-blue-500" : "bg-blue-600"} text-white text-xs font-bold px-3 py-1 rounded-bl-xl`}
-                  >
-                    {plan.badge}
-                  </div>
-                )}
-                <div className="p-5">
-                  <div className="mb-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Zap size={16} className="text-blue-400" />
-                      <span className="text-2xl font-black text-slate-100">
-                        {plan.speed}
-                      </span>
-                      <span className="text-sm text-slate-400 font-medium">
-                        Mbps
-                      </span>
+          {/* ── Plan cards ── */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-16">
+            {filtered.map((plan, i) => {
+              const variant = plan.variants.find(
+                (v) => v.duration === selectedDuration,
+              )!;
+              const isPopular = plan.badge === "Popular";
+              return (
+                <motion.div
+                  key={plan.id}
+                  custom={i}
+                  variants={fadeUp}
+                  initial="hidden"
+                  animate="show"
+                >
+                  <TiltCard className="h-full">
+                    <div
+                      className={[
+                        "group/plan relative h-full rounded-2xl border overflow-hidden flex flex-col transition-all duration-300 hover:border-cyan-200/25 hover:bg-white/[0.065] hover:shadow-[0_18px_70px_rgba(34,211,238,0.10)]",
+                        isPopular
+                          ? "border-cyan-300/30 bg-white/[0.06] shadow-[0_0_40px_rgba(34,211,238,0.1)]"
+                          : "border-white/[0.06] bg-white/[0.04]",
+                      ].join(" ")}
+                      style={{ backdropFilter: "blur(12px)" }}
+                    >
+                      {/* Top shimmer line for popular */}
+                      {isPopular && (
+                        <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-cyan-300/80 to-transparent" />
+                      )}
+
+                      {/* Hover shimmer sweep */}
+                      <div className="pointer-events-none absolute inset-0 opacity-0 transition duration-500 group-hover/plan:opacity-100">
+                        <div className="absolute -left-20 top-0 h-full w-20 rotate-12 bg-gradient-to-r from-transparent via-white/[0.08] to-transparent transition-transform duration-700 group-hover/plan:translate-x-[26rem]" />
+                        <div className="absolute inset-x-6 bottom-0 h-px bg-gradient-to-r from-transparent via-cyan-200/25 to-transparent" />
+                      </div>
+
+                      {plan.badge && (
+                        <div
+                          className={[
+                            "absolute top-0 right-0 text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-bl-xl",
+                            isPopular
+                              ? "bg-cyan-300 text-slate-950"
+                              : "bg-blue-500/80 text-white",
+                          ].join(" ")}
+                        >
+                          {plan.badge}
+                        </div>
+                      )}
+
+                      <div className="p-5 flex flex-col flex-1">
+                        {/* Speed + best-for */}
+                        <div className="mb-5">
+                          <div className="flex items-baseline gap-1.5 mb-1">
+                            <span className="text-3xl font-black text-white transition-colors group-hover/plan:text-cyan-100">
+                              {plan.speed}
+                            </span>
+                            <span className="text-sm text-slate-400 font-medium">
+                              Mbps
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <Zap size={12} className="text-cyan-400" />
+                            <span className="text-xs text-slate-500">
+                              Fiber Broadband
+                            </span>
+                          </div>
+                          {/* Best for tag */}
+                          <p className="text-[11px] text-slate-500 leading-relaxed border-l-2 border-cyan-400/30 pl-2">
+                            {getBestFor(plan.speed)}
+                          </p>
+                        </div>
+
+                        {/* Price */}
+                        <div className="mb-5">
+                          <p
+                            className={[
+                              "text-3xl font-black",
+                              isPopular ? "text-cyan-300" : "text-white",
+                            ].join(" ")}
+                          >
+                            ₹{variant.price.toLocaleString()}
+                          </p>
+                          <p className="text-xs text-slate-400 mt-0.5">
+                            for {durationLabels[selectedDuration]}
+                          </p>
+                          {selectedDuration !== "3m" && (
+                            <p className="text-xs text-emerald-400 font-semibold mt-1">
+                              ₹
+                              {Math.round(
+                                variant.price / variant.months,
+                              ).toLocaleString()}
+                              /mo avg
+                            </p>
+                          )}
+                        </div>
+
+                        {/* Features */}
+                        <ul className="space-y-2 mb-4 flex-1">
+                          {plan.features.slice(0, 4).map((f) => (
+                            <li
+                              key={f}
+                              className="flex items-start gap-2 text-xs text-slate-300 transition-colors group-hover/plan:text-slate-200"
+                            >
+                              <Check
+                                size={12}
+                                className="text-cyan-400 mt-0.5 shrink-0 transition-transform group-hover/plan:scale-110"
+                              />
+                              {f}
+                            </li>
+                          ))}
+                        </ul>
+
+                        {/* Router/install note */}
+                        <p className="text-[11px] text-slate-600 mb-4 leading-relaxed">
+                          Router provided with active subscription ·
+                          Installation charges apply
+                        </p>
+
+                        {/* CTA */}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            openConnectionModal({
+                              category: plan.category,
+                              speed: plan.speed,
+                              duration: selectedDuration,
+                              months: variant.months,
+                              price: variant.price,
+                            })
+                          }
+                          className={[
+                            "w-full py-2.5 rounded-xl text-sm font-bold transition-all duration-200 active:scale-[0.98]",
+                            isPopular
+                              ? "bg-cyan-300 text-slate-950 hover:bg-cyan-200 shadow-[0_8px_30px_rgba(34,211,238,0.25)] hover:shadow-[0_12px_40px_rgba(34,211,238,0.35)] hover:-translate-y-0.5"
+                              : "bg-white/[0.08] text-white border border-white/[0.08] hover:bg-white/[0.13] hover:border-white/[0.15] hover:-translate-y-0.5",
+                          ].join(" ")}
+                        >
+                          Get Started
+                        </button>
+                      </div>
                     </div>
-                    <p className="text-xs text-slate-500">Fiber Broadband</p>
-                  </div>
-                  <div className="mb-4">
-                    <p className="text-3xl font-bold text-slate-100">
-                      ₹{variant.price.toLocaleString()}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      for {durationLabels[selectedDuration]}
-                    </p>
-                    {selectedDuration !== "3m" && (
-                      <p className="text-xs text-emerald-300 font-medium mt-0.5">
-                        ₹
-                        {Math.round(
-                          variant.price / variant.months,
-                        ).toLocaleString()}
-                        /mo avg
-                      </p>
-                    )}
-                  </div>
-                  <ul className="space-y-1.5 mb-5">
-                    {plan.features.slice(0, 4).map((f) => (
-                      <li
-                        key={f}
-                        className="flex items-start gap-2 text-xs text-slate-300"
-                      >
-                        <Check
-                          size={12}
-                          className="text-emerald-500 mt-0.5 shrink-0"
-                        />
-                        {f}
-                      </li>
-                    ))}
-                  </ul>
-                  <div className="mb-5 rounded-xl border border-cyan-800/60 bg-cyan-950/30 px-3 py-2.5 text-xs text-cyan-100">
-                    <p className="font-semibold">FUP Data Limit: 3.5 TB/Month</p>
-                    <p className="text-cyan-200/80">Post-FUP Speed: 2 Mbps</p>
-                  </div>
+                  </TiltCard>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* ── Cashfree test plan (hidden) ── */}
+          {showCashfreeTestPlan && (
+            <div className="mb-16 rounded-2xl border border-amber-500/30 bg-amber-500/[0.06] backdrop-blur p-5">
+              <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-amber-400">
+                    Production payment test
+                  </p>
+                  <h2 className="mt-1 text-2xl font-bold text-white">
+                    Cashfree Test Plan
+                  </h2>
+                  <p className="mt-2 text-sm text-slate-300">
+                    Use this hidden plan to verify live Cashfree checkout,
+                    webhook, ticket creation, and success-page flow with a ₹1
+                    payment.
+                  </p>
+                  <p className="mt-2 text-xs text-amber-300 font-mono">
+                    /plans?cashfreeTest=1
+                  </p>
+                </div>
+                <div className="rounded-2xl border border-amber-500/20 bg-white/[0.04] p-4 md:min-w-52">
+                  <p className="text-sm text-slate-400">Test amount</p>
+                  <p className="text-3xl font-black text-white">₹1</p>
                   <button
                     type="button"
-                    onClick={() => openConnectionModal({
-                      category: plan.category,
-                      speed: plan.speed,
-                      duration: selectedDuration,
-                      months: variant.months,
-                      price: variant.price,
-                    })}
-                    className="block w-full text-center py-2.5 rounded-xl text-sm font-semibold transition-colors bg-blue-600 text-white hover:bg-blue-700"
+                    onClick={() =>
+                      openConnectionModal({
+                        category: "Test",
+                        speed: 1,
+                        duration: "1m",
+                        months: 1,
+                        price: 1,
+                      })
+                    }
+                    className="mt-4 w-full rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-bold text-slate-950 hover:bg-amber-300 transition-colors"
                   >
-                    Get Started
+                    Test Cashfree Payment
                   </button>
                 </div>
               </div>
-            );
-          })}
-        </div>
+            </div>
+          )}
 
-        {showCashfreeTestPlan && (
-          <div className="mb-14 rounded-3xl border border-amber-500/50 bg-amber-950/30 p-5 shadow-lg">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-wide text-amber-300">
-                  Production payment test
-                </p>
-                <h2 className="mt-1 text-2xl font-bold text-slate-100">
-                  Cashfree Test Plan
-                </h2>
-                <p className="mt-2 text-sm text-slate-300">
-                  Use this hidden plan to verify live Cashfree checkout, webhook,
-                  ticket creation, and success-page flow with a Rs. 1 payment.
-                </p>
-                <p className="mt-2 text-xs text-amber-200">
-                  URL gate: <span className="font-mono">/plans?cashfreeTest=1</span>
-                </p>
-              </div>
-              <div className="rounded-2xl border border-amber-500/40 bg-slate-950/60 p-4 md:min-w-56">
-                <p className="text-sm text-slate-400">Test amount</p>
-                <p className="text-3xl font-black text-slate-100">Rs. 1</p>
+          {/* ── OTT section ── */}
+          <div className="mb-6">
+            <div className="flex items-center gap-3 mb-2">
+              <Tv size={20} className="text-cyan-300" />
+              <h2 className="text-2xl font-bold text-white">
+                OTT + Broadband Add-ons
+              </h2>
+            </div>
+            <p className="text-slate-400 mb-4 text-sm">
+              Enhance your internet plan with premium OTT streaming bundles.
+            </p>
+            <div className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.07] px-4 py-2.5 mb-8">
+              <Gift size={14} className="text-cyan-300" />
+              <p className="text-sm text-cyan-200 font-medium">
+                Special Offer: Add Basic OTT with any broadband at just{" "}
+                <strong className="text-cyan-100">₹299/year</strong>
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {ottPlans.map((plan, i) => (
+              <motion.div
+                key={plan.id}
+                custom={i}
+                variants={fadeUp}
+                initial="hidden"
+                animate="show"
+                whileHover={shouldReduceMotion ? undefined : { y: -6 }}
+                transition={{ type: "spring", stiffness: 260, damping: 24 }}
+                className="group/ott relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.04] backdrop-blur p-5 flex flex-col min-h-[20rem] transition-colors duration-300 hover:border-cyan-200/25 hover:bg-white/[0.06] hover:shadow-[0_18px_60px_rgba(34,211,238,0.09)]"
+              >
+                <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/0 to-transparent transition group-hover/ott:via-cyan-200/40" />
+                <div className="flex items-center gap-2 mb-1">
+                  <Tv size={13} className="text-cyan-400" />
+                  <h3 className="font-semibold text-white text-sm">
+                    {plan.name}
+                  </h3>
+                </div>
+                {plan.highlight && (
+                  <p className="text-xs text-cyan-300 font-medium mb-3">
+                    {plan.highlight}
+                  </p>
+                )}
+                <div className="flex flex-wrap gap-1 mb-4">
+                  {plan.apps.map((app) => (
+                    <span
+                      key={app}
+                      className="text-xs bg-white/[0.06] text-slate-300 px-2 py-0.5 rounded-full border border-white/[0.06] transition-colors group-hover/ott:border-cyan-200/15 group-hover/ott:text-slate-200"
+                    >
+                      {app}
+                    </span>
+                  ))}
+                </div>
+                <div className="space-y-2 mb-4 flex-1">
+                  {plan.variants.map((v) => (
+                    <div
+                      key={v.label}
+                      className="flex items-center justify-between"
+                    >
+                      <span className="text-slate-500 text-xs">{v.label}</span>
+                      <span className="font-bold text-white text-sm">
+                        ₹{v.price}
+                      </span>
+                    </div>
+                  ))}
+                </div>
                 <button
                   type="button"
-                  onClick={() =>
-                    openConnectionModal({
-                      category: "Test",
-                      speed: 1,
-                      duration: "1m",
-                      months: 1,
-                      price: 1,
-                    })
-                  }
-                  className="mt-4 w-full rounded-xl bg-amber-500 px-4 py-2.5 text-sm font-bold text-slate-950 transition-colors hover:bg-amber-400"
+                  onClick={openOttContactModal}
+                  className="w-full py-2.5 rounded-xl text-sm font-semibold border border-cyan-300/20 text-cyan-300 hover:bg-cyan-300/10 hover:shadow-[0_10px_34px_rgba(34,211,238,0.12)] active:scale-[0.98] transition-all"
                 >
-                  Test Cashfree Payment
+                  Add to Plan
                 </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* OTT Section */}
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-2">
-            <Tv size={20} className="text-blue-300" />
-            <h2 className="subheading-rhythm text-2xl font-bold text-slate-100">
-              OTT + Broadband Add-ons
-            </h2>
-          </div>
-          <p className="copy-rhythm text-slate-400 mb-2">
-            Enhance your internet plan with premium OTT streaming bundles.
-          </p>
-          <div className="inline-flex items-center gap-2 bg-blue-900/40 border border-blue-800 rounded-xl px-4 py-2.5 mb-8">
-            <Gift size={14} className="text-blue-400" />
-            <p className="text-sm text-blue-300 font-medium">
-              Special Offer: Add Basic OTT plan with any broadband at just{" "}
-              <strong>₹299/year</strong>
-            </p>
+              </motion.div>
+            ))}
           </div>
         </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-          {ottPlans.map((plan) => (
-            <div
-              key={plan.id}
-              className="bg-slate-900 border border-slate-800 rounded-2xl p-5 hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col h-full min-h-[20rem] md:min-h-[24rem]"
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <Tv size={14} className="text-blue-500" />
-                <h3 className="font-semibold text-slate-100 text-sm">
-                  {plan.name}
-                </h3>
-              </div>
-              {plan.highlight && (
-                <p className="text-xs text-blue-400 font-medium mb-3">
-                  {plan.highlight}
-                </p>
-              )}
-              <div className="flex flex-wrap gap-1 mb-4">
-                {plan.apps.map((app) => (
-                  <span
-                    key={app}
-                    className="text-xs bg-blue-900/30 text-blue-200 px-2 py-0.5 rounded-full"
-                  >
-                    {app}
-                  </span>
-                ))}
-              </div>
-              <div className="space-y-1.5">
-                {plan.variants.map((v) => (
-                  <div
-                    key={v.label}
-                    className="flex items-center justify-between text-sm"
-                  >
-                    <span className="text-slate-400 text-xs">{v.label}</span>
-                    <span className="font-bold text-slate-100">₹{v.price}</span>
-                  </div>
-                ))}
-              </div>
-              <button
-                type="button"
-                onClick={openOttContactModal}
-                className="mt-auto pt-4 block w-full text-center py-2 rounded-xl text-sm font-semibold border-2 border-blue-700/60 text-blue-300 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors"
-              >
-                Add to Plan
-              </button>
-            </div>
-          ))}
-        </div>
-
-        {showConnectionModal && (
-          <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/70 px-4 py-5 overflow-y-auto">
-            <div className="w-full max-w-2xl rounded-2xl border border-slate-700 bg-slate-900 p-5 sm:p-6 shadow-2xl">
-              {!selectedConnectionPlan ? (
-                <>
-                  <h3 className="text-lg font-bold text-slate-100 mb-2">New Connection / Upgrade</h3>
-                  <p className="text-sm text-slate-300 mb-4">Please contact us for OTT add-ons, plan upgrades, or custom plan assistance.</p>
-                  <p className="text-cyan-300 font-semibold text-lg mb-1">99749 55542</p>
-                  <p className="text-xs text-slate-400 mb-5">New connections & upgrades</p>
-                  <div className="flex gap-3">
-                    <a href="tel:+919974955542" className="btn-primary flex-1 text-center py-2.5">Call Now</a>
-                    <button type="button" onClick={closeConnectionModal} className="flex-1 rounded-xl border border-slate-700 py-2.5 text-sm font-semibold text-slate-200">Close</button>
-                  </div>
-                </>
-              ) : user ? (
-                <>
-                  <h3 className="text-lg font-bold text-slate-100 mb-2">Existing Customer</h3>
-                  <p className="text-sm text-slate-300 mb-5">
-                    New connection checkout is for new customers only. Renewal and upgrade payments for existing customers will be available from My Subscriptions.
-                  </p>
-                  <div className="rounded-xl border border-blue-800/60 bg-blue-950/30 p-4 text-sm text-blue-100 mb-5">
-                    Selected plan: {selectedConnectionPlan.category} {selectedConnectionPlan.speed} Mbps for {durationLabels[selectedConnectionPlan.duration] || ` Months`}.
-                  </div>
-                  <button type="button" onClick={closeConnectionModal} className="btn-primary w-full py-2.5">Close</button>
-                </>
-              ) : (
-                <>
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-5">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-100">New Broadband Connection</h3>
-                      <p className="text-sm text-slate-400 mt-1">Fill your installation details and continue to Cashfree payment.</p>
-                    </div>
-                    <div className="rounded-xl border border-cyan-800/60 bg-cyan-950/30 px-4 py-3 text-sm text-cyan-100 sm:text-right">
-                      <p className="font-bold">{selectedConnectionPlan.category} {selectedConnectionPlan.speed} Mbps</p>
-                      <p>{durationLabels[selectedConnectionPlan.duration] || ` Months`} · ₹{selectedConnectionPlan.price.toLocaleString()}</p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-amber-700/60 bg-amber-950/30 px-4 py-3 text-xs text-amber-100 mb-5">
-                    This payment covers only the selected broadband plan. Installation charges will be collected at the time of installation.
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Full Name *</label>
-                      <input className="input-dark py-2.5" value={connectionForm.name} onChange={(e) => updateConnectionForm("name", e.target.value)} placeholder="Customer name" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Phone *</label>
-                      <input className="input-dark py-2.5" value={connectionForm.phone} onChange={(e) => updateConnectionForm("phone", e.target.value)} placeholder="99749 55542" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Email *</label>
-                      <input type="email" className="input-dark py-2.5" value={connectionForm.email} onChange={(e) => updateConnectionForm("email", e.target.value)} placeholder="customer@example.com" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Pin Code *</label>
-                      <input className="input-dark py-2.5" value={connectionForm.pinCode} onChange={(e) => updateConnectionForm("pinCode", e.target.value)} placeholder="392001" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">City *</label>
-                      <input className="input-dark py-2.5" value={connectionForm.city} onChange={(e) => updateConnectionForm("city", e.target.value)} placeholder="Bharuch" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">State *</label>
-                      <input className="input-dark py-2.5" value={connectionForm.state} onChange={(e) => updateConnectionForm("state", e.target.value)} placeholder="Gujarat" />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Installation Address *</label>
-                      <textarea className="input-dark min-h-20 py-2.5" value={connectionForm.address} onChange={(e) => updateConnectionForm("address", e.target.value)} placeholder="House/flat number, street, area" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Landmark</label>
-                      <input className="input-dark py-2.5" value={connectionForm.landmark} onChange={(e) => updateConnectionForm("landmark", e.target.value)} placeholder="Nearby landmark" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">Notes</label>
-                      <input className="input-dark py-2.5" value={connectionForm.notes} onChange={(e) => updateConnectionForm("notes", e.target.value)} placeholder="Preferred timing, etc." />
-                    </div>
-                  </div>
-
-                  {connectionError && <p className="mt-4 rounded-xl border border-red-800/60 bg-red-950/30 px-4 py-3 text-sm text-red-200">{connectionError}</p>}
-
-                  <div className="flex flex-col sm:flex-row gap-3 mt-6">
-                    <button type="button" onClick={closeConnectionModal} disabled={processingConnection} className="flex-1 rounded-xl border border-slate-700 py-2.5 text-sm font-semibold text-slate-200 disabled:opacity-60">Cancel</button>
-                    <button type="button" onClick={handleNewConnectionPayment} disabled={processingConnection} className="btn-primary flex-1 py-2.5 flex items-center justify-center gap-2 disabled:opacity-60">
-                      {processingConnection ? <Loader2 size={16} className="animate-spin" /> : null}
-                      {processingConnection ? "Starting Payment..." : "Pay with Cashfree"}
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* ── Connection modal ── */}
+      {showConnectionModal && (
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/75 px-4 py-5 overflow-y-auto backdrop-blur-sm">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.97, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.97 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full max-w-2xl rounded-2xl border border-white/[0.08] bg-[#071527] p-5 sm:p-6 shadow-2xl"
+          >
+            {!selectedConnectionPlan ? (
+              <>
+                <h3 className="text-lg font-bold text-white mb-2">
+                  New Connection / Upgrade
+                </h3>
+                <p className="text-sm text-slate-300 mb-4">
+                  Please contact us for OTT add-ons, plan upgrades, or custom
+                  plan assistance.
+                </p>
+                <p className="text-cyan-300 font-bold text-lg mb-0.5">
+                  99749 55542
+                </p>
+                <p className="text-xs text-slate-400 mb-5">
+                  New connections & upgrades
+                </p>
+                <div className="flex gap-3">
+                  <a
+                    href="tel:+919974955542"
+                    className="flex-1 text-center py-2.5 rounded-xl bg-cyan-300 text-slate-950 font-bold text-sm hover:bg-cyan-200 transition-colors"
+                  >
+                    Call Now
+                  </a>
+                  <button
+                    type="button"
+                    onClick={closeConnectionModal}
+                    className="flex-1 rounded-xl border border-white/[0.08] py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/[0.05] transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            ) : user ? (
+              <>
+                <h3 className="text-lg font-bold text-white mb-2">
+                  Existing Customer
+                </h3>
+                <p className="text-sm text-slate-300 mb-5">
+                  New connection checkout is for new customers only. Renewal and
+                  upgrade payments for existing customers will be available from
+                  My Subscriptions.
+                </p>
+                <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/[0.06] p-4 text-sm text-cyan-100 mb-5">
+                  Selected: {selectedConnectionPlan.category}{" "}
+                  {selectedConnectionPlan.speed} Mbps for{" "}
+                  {durationLabels[selectedConnectionPlan.duration] || "Months"}.
+                </div>
+                <button
+                  type="button"
+                  onClick={closeConnectionModal}
+                  className="w-full py-2.5 rounded-xl bg-cyan-300 text-slate-950 font-bold text-sm hover:bg-cyan-200 transition-colors"
+                >
+                  Close
+                </button>
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between mb-5">
+                  <div>
+                    <h3 className="text-lg font-bold text-white">
+                      New Broadband Connection
+                    </h3>
+                    <p className="text-sm text-slate-400 mt-1">
+                      Fill your installation details and continue to Cashfree
+                      payment.
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-cyan-300/20 bg-cyan-300/[0.06] px-4 py-3 text-sm text-cyan-100 sm:text-right shrink-0">
+                    <p className="font-bold">
+                      {selectedConnectionPlan.category}{" "}
+                      {selectedConnectionPlan.speed} Mbps
+                    </p>
+                    <p className="text-slate-400 mt-0.5">
+                      {durationLabels[selectedConnectionPlan.duration]} · ₹
+                      {selectedConnectionPlan.price.toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3 text-xs text-amber-200 mb-5">
+                  This payment covers only the selected broadband plan.
+                  Installation charges will be collected at the time of
+                  installation.
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {[
+                    {
+                      label: "Full Name *",
+                      field: "name" as const,
+                      placeholder: "Customer name",
+                      type: "text",
+                    },
+                    {
+                      label: "Phone *",
+                      field: "phone" as const,
+                      placeholder: "99749 55542",
+                      type: "text",
+                    },
+                    {
+                      label: "Email *",
+                      field: "email" as const,
+                      placeholder: "customer@example.com",
+                      type: "email",
+                    },
+                    {
+                      label: "Pin Code *",
+                      field: "pinCode" as const,
+                      placeholder: "392001",
+                      type: "text",
+                    },
+                    {
+                      label: "City *",
+                      field: "city" as const,
+                      placeholder: "Bharuch",
+                      type: "text",
+                    },
+                    {
+                      label: "State *",
+                      field: "state" as const,
+                      placeholder: "Gujarat",
+                      type: "text",
+                    },
+                  ].map(({ label, field, placeholder, type }) => (
+                    <div key={field}>
+                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">
+                        {label}
+                      </label>
+                      <input
+                        type={type}
+                        className="w-full rounded-xl border border-white/[0.08] bg-white/[0.05] px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-300/40 focus:bg-white/[0.07] transition-colors"
+                        value={connectionForm[field]}
+                        onChange={(e) =>
+                          updateConnectionForm(field, e.target.value)
+                        }
+                        placeholder={placeholder}
+                      />
+                    </div>
+                  ))}
+
+                  <div className="sm:col-span-2">
+                    <label className="block text-sm font-semibold text-slate-200 mb-1.5">
+                      Installation Address *
+                    </label>
+                    <textarea
+                      className="w-full rounded-xl border border-white/[0.08] bg-white/[0.05] px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-300/40 focus:bg-white/[0.07] transition-colors min-h-20"
+                      value={connectionForm.address}
+                      onChange={(e) =>
+                        updateConnectionForm("address", e.target.value)
+                      }
+                      placeholder="House/flat number, street, area"
+                    />
+                  </div>
+
+                  {[
+                    {
+                      label: "Landmark",
+                      field: "landmark" as const,
+                      placeholder: "Nearby landmark",
+                    },
+                    {
+                      label: "Notes",
+                      field: "notes" as const,
+                      placeholder: "Preferred timing, etc.",
+                    },
+                  ].map(({ label, field, placeholder }) => (
+                    <div key={field}>
+                      <label className="block text-sm font-semibold text-slate-200 mb-1.5">
+                        {label}
+                      </label>
+                      <input
+                        className="w-full rounded-xl border border-white/[0.08] bg-white/[0.05] px-3 py-2.5 text-sm text-white placeholder:text-slate-600 focus:outline-none focus:border-cyan-300/40 focus:bg-white/[0.07] transition-colors"
+                        value={connectionForm[field]}
+                        onChange={(e) =>
+                          updateConnectionForm(field, e.target.value)
+                        }
+                        placeholder={placeholder}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {connectionError && (
+                  <p className="mt-4 rounded-xl border border-red-500/20 bg-red-500/[0.08] px-4 py-3 text-sm text-red-300">
+                    {connectionError}
+                  </p>
+                )}
+
+                <div className="flex flex-col sm:flex-row gap-3 mt-6">
+                  <button
+                    type="button"
+                    onClick={closeConnectionModal}
+                    disabled={processingConnection}
+                    className="flex-1 rounded-xl border border-white/[0.08] py-2.5 text-sm font-semibold text-slate-200 hover:bg-white/[0.05] disabled:opacity-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNewConnectionPayment}
+                    disabled={processingConnection}
+                    className="flex-1 py-2.5 rounded-xl bg-cyan-300 text-slate-950 font-bold text-sm hover:bg-cyan-200 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 shadow-[0_8px_30px_rgba(34,211,238,0.25)]"
+                  >
+                    {processingConnection && (
+                      <Loader2 size={15} className="animate-spin" />
+                    )}
+                    {processingConnection
+                      ? "Starting Payment…"
+                      : "Pay with Cashfree"}
+                  </button>
+                </div>
+              </>
+            )}
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }
