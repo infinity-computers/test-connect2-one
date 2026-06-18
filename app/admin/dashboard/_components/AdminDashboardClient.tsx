@@ -75,6 +75,7 @@ export default function AdminDashboardClient() {
   const [showNotificationForm, setShowNotificationForm] = useState(false);
   const [savingUser, setSavingUser] = useState(false);
   const [savingNotification, setSavingNotification] = useState(false);
+  const [cancellingNotificationId, setCancellingNotificationId] = useState<string | null>(null);
   const [addUserError, setAddUserError] = useState("");
   const [notificationError, setNotificationError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -219,6 +220,31 @@ export default function AdminDashboardClient() {
       setNotificationError("Failed to create notification");
     } finally {
       setSavingNotification(false);
+    }
+  };
+
+  const handleCancelNotification = async (id: string) => {
+    setNotificationError("");
+    setCancellingNotificationId(id);
+
+    try {
+      const res = await fetch("/api/admin/notifications", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setNotificationError(data.error || "Failed to cancel notification");
+        return;
+      }
+
+      setNotifications((prev) => prev.filter((notification) => notification.id !== id));
+    } catch {
+      setNotificationError("Failed to cancel notification");
+    } finally {
+      setCancellingNotificationId(null);
     }
   };
 
@@ -525,6 +551,12 @@ export default function AdminDashboardClient() {
             </div>
           )}
 
+          {notificationError && !showNotificationForm && (
+            <p className="mb-4 text-sm text-red-200 bg-red-900/30 border border-red-700/60 rounded-lg px-3 py-2">
+              {notificationError}
+            </p>
+          )}
+
           <div className="space-y-3">
             {activeNotifications.length === 0 ? (
               <div className="text-center py-6 text-slate-500 text-sm border border-dashed border-slate-800 rounded-2xl">
@@ -536,16 +568,30 @@ export default function AdminDashboardClient() {
                   key={notification.id}
                   className="rounded-2xl border border-amber-400/20 bg-amber-500/5 px-4 py-3"
                 >
-                  <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
-                    <div>
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
                       <p className="font-semibold text-slate-100">{notification.title}</p>
                       <p className="text-sm text-slate-300 mt-1 whitespace-pre-line">
                         {notification.description}
                       </p>
                     </div>
-                    <p className="text-xs text-slate-500 sm:pl-6 sm:pt-1 whitespace-nowrap">
-                      Expires {new Date(notification.expires_at).toLocaleString("en-IN")}
-                    </p>
+                    <div className="flex shrink-0 flex-col gap-2 sm:items-end">
+                      <p className="text-xs text-slate-500 whitespace-nowrap">
+                        Expires {new Date(notification.expires_at).toLocaleString("en-IN")}
+                      </p>
+                      {user.role === "ADMIN" && (
+                        <button
+                          onClick={() => handleCancelNotification(notification.id)}
+                          disabled={cancellingNotificationId === notification.id}
+                          className="inline-flex items-center justify-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 transition-colors hover:border-red-400/60 hover:bg-red-500/15 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {cancellingNotificationId === notification.id && (
+                            <Loader2 size={12} className="animate-spin" />
+                          )}
+                          Cancel
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))
