@@ -7,6 +7,7 @@ import {
   AnimatePresence,
   useMotionValue,
   useSpring,
+  type Variants,
 } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 
@@ -14,6 +15,9 @@ interface NavbarProps {
   currentPath: string;
   onNavigate: (path: string) => void;
 }
+
+const NAV_EASE = [0.32, 0.72, 0, 1] as const;
+const ITEM_EASE = [0.22, 1, 0.36, 1] as const;
 
 export default function Navbar({ currentPath, onNavigate }: NavbarProps) {
   const { user, role } = useAuth();
@@ -69,14 +73,14 @@ export default function Navbar({ currentPath, onNavigate }: NavbarProps) {
 
   // ── Framer Motion variants ─────────────────────────────────────────────────
 
-  const navVariants = {
+  const navVariants: Variants = {
     top: {
       top: 0,
       left: 0,
       right: 0,
       x: 0,
       width: "100%",
-      transition: { duration: 0.45, ease: [0.32, 0.72, 0, 1] },
+      transition: { duration: 0.45, ease: NAV_EASE },
     },
     scrolled: {
       top: 16,
@@ -84,31 +88,31 @@ export default function Navbar({ currentPath, onNavigate }: NavbarProps) {
       right: "auto",
       x: "-50%",
       width: "min(calc(100% - 24px), 80rem)",
-      transition: { duration: 0.45, ease: [0.32, 0.72, 0, 1] },
+      transition: { duration: 0.45, ease: NAV_EASE },
     },
   };
 
   // Mobile menu panel
-  const menuVariants = {
+  const menuVariants: Variants = {
     closed: {
       height: 0,
       opacity: 0,
-      transition: { duration: 0.3, ease: [0.32, 0.72, 0, 1] },
+      transition: { duration: 0.3, ease: NAV_EASE },
     },
     open: {
       height: "auto",
       opacity: 1,
-      transition: { duration: 0.35, ease: [0.32, 0.72, 0, 1] },
+      transition: { duration: 0.35, ease: NAV_EASE },
     },
   };
 
   // Stagger children inside menu
-  const menuItemVariants = {
+  const menuItemVariants: Variants = {
     closed: { opacity: 0, x: -8 },
     open: (i: number) => ({
       opacity: 1,
       x: 0,
-      transition: { duration: 0.25, delay: i * 0.05, ease: [0.22, 1, 0.36, 1] },
+      transition: { duration: 0.25, delay: i * 0.05, ease: ITEM_EASE },
     }),
   };
 

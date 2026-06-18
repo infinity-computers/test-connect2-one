@@ -37,15 +37,16 @@ export default function FiberCanvas({
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas = canvasRef.current as HTMLCanvasElement;
     if (!canvas) return;
-    const ctx = canvas.getContext("2d");
+    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
     if (!ctx) return;
 
     let animId: number;
     type Node = { x: number; y: number; vx: number; vy: number };
     let nodes: Node[] = [];
-    let W = 0, H = 0;
+    let W = 0,
+      H = 0;
 
     const [r, g, b] = color;
 
@@ -109,7 +110,7 @@ export default function FiberCanvas({
       cancelAnimationFrame(animId);
       ro.disconnect();
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   // ↑ intentionally empty deps — all config is read once on mount.
   // If you need live prop updates, wrap values in refs instead.

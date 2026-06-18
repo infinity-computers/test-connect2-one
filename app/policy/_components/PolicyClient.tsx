@@ -105,26 +105,36 @@ function FiberCanvas({ opacity = 0.3 }: { opacity?: number }) {
 }
 
 // ─── Floating Particles ──────────────────────────────────────────────────────
+const floatingParticles = [
+  { left: "8%", top: "20%", driftA: 42, driftB: -28, duration: 10, delay: 0.2 },
+  { left: "18%", top: "72%", driftA: -36, driftB: 54, duration: 13, delay: 1.4 },
+  { left: "28%", top: "38%", driftA: 58, driftB: -46, duration: 11, delay: 2.1 },
+  { left: "42%", top: "82%", driftA: -48, driftB: 34, duration: 14, delay: 0.8 },
+  { left: "54%", top: "26%", driftA: 30, driftB: -60, duration: 12, delay: 3.2 },
+  { left: "66%", top: "64%", driftA: -56, driftB: 42, duration: 10.5, delay: 1.9 },
+  { left: "74%", top: "18%", driftA: 46, driftB: -32, duration: 13.5, delay: 2.7 },
+  { left: "82%", top: "78%", driftA: -28, driftB: 62, duration: 12.5, delay: 0.5 },
+  { left: "90%", top: "44%", driftA: 52, driftB: -40, duration: 11.5, delay: 3.8 },
+  { left: "36%", top: "58%", driftA: -40, driftB: 48, duration: 14.5, delay: 1.1 },
+];
+
 function FloatingParticles() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden">
-      {[...Array(10)].map((_, i) => (
+      {floatingParticles.map((particle, i) => (
         <motion.div
           key={i}
           className="absolute h-0.5 w-0.5 rounded-full bg-cyan-300/15"
-          initial={{
-            x: Math.random() * window.innerWidth,
-            y: Math.random() * window.innerHeight,
-          }}
+          style={{ left: particle.left, top: particle.top }}
           animate={{
-            y: [null, -80, -160],
-            x: [null, Math.random() * 150 - 75, Math.random() * 150 - 75],
+            y: [0, -80, -160],
+            x: [0, particle.driftA, particle.driftB],
             opacity: [0, 0.25, 0],
           }}
           transition={{
-            duration: 8 + Math.random() * 6,
+            duration: particle.duration,
             repeat: Infinity,
-            delay: Math.random() * 5,
+            delay: particle.delay,
             ease: "linear",
           }}
         />
@@ -493,7 +503,7 @@ export default function PolicyClient() {
               <>
                 {/* FUP Stats */}
                 <motion.div
-                  variants={fadeUp}
+                  variants={fadeUp as any}
                   className="grid grid-cols-1 sm:grid-cols-2 gap-4"
                 >
                   <div className="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.06] p-6 text-center">
@@ -546,7 +556,7 @@ export default function PolicyClient() {
                 </ExpandableSection>
 
                 <motion.div
-                  variants={fadeUp}
+                  variants={fadeUp as any}
                   className="rounded-2xl border border-blue-300/20 bg-blue-300/[0.06] p-4 flex items-start gap-3"
                 >
                   <Info size={16} className="text-blue-300 mt-0.5 shrink-0" />
@@ -599,7 +609,7 @@ export default function PolicyClient() {
                 </ExpandableSection>
 
                 <motion.div
-                  variants={fadeUp}
+                  variants={fadeUp as any}
                   className="rounded-2xl border border-amber-300/20 bg-amber-300/[0.06] p-4 flex items-start gap-3"
                 >
                   <AlertTriangle
