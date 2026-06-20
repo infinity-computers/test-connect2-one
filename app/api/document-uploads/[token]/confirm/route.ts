@@ -264,6 +264,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
             select: { id: true, status: true, updated_at: true },
           });
 
+      if (isComplete) {
+        await tx.new_connection_requests.updateMany({
+          where: {
+            id: uploadRequest.new_connection_request_id,
+            status: "PAID",
+          },
+          data: { status: "UNDER_REVIEW" },
+        });
+      }
+
       return {
         file,
         request: updatedRequest,

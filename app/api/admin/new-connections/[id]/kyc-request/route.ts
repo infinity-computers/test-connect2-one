@@ -218,6 +218,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       },
     });
 
+    await prisma.new_connection_requests.updateMany({
+      where: {
+        id,
+        status: "PAID",
+      },
+      data: { status: "UNDER_REVIEW" },
+    });
+
     return NextResponse.json(
       {
         ok: true,
