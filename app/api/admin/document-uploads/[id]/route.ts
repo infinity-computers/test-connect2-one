@@ -5,8 +5,51 @@ import { prisma } from "../../../../../lib/prisma";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+type UpdateDocumentUploadRequestBody = {
+  expiresAt?: unknown;
+  expires_at?: unknown;
+  expiresInDays?: unknown;
+  expires_in_days?: unknown;
+};
+
+const DEFAULT_EXPIRY_DAYS = 7;
+const MIN_EXPIRY_DAYS = 1;
+const MAX_EXPIRY_DAYS = 30;
+
 function safeDate(value: Date | null | undefined): string | null {
   return value ? value.toISOString() : null;
+}
+
+async function parseBody(req: NextRequest): Promise<UpdateDocumentUploadRequestBody | null> {
+  try {
+    const parsed = await req.json();
+    return parsed && typeof parsed === "object" && !Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeExpiresAt(expiresAtValue: unknown, expiresInDaysValue: unknown): Date | null {
+  if (typeof expiresAtValue === "string" && expiresAtValue.trim()) {
+    const expiresAt = new Date(expiresAtValue);
+    if (Number.isNaN(expiresAt.getTime()) || expiresAt.getTime() <= Date.now()) {
+      return null;
+    }
+    return expiresAt;
+  }
+
+  const rawDays = typeof expiresInDaysValue === "undefined" ? DEFAULT_EXPIRY_DAYS : expiresInDaysValue;
+  if (typeof rawDays !== "number" || !Number.isInteger(rawDays)) {
+    return null;
+  }
+
+  if (rawDays < MIN_EXPIRY_DAYS || rawDays > MAX_EXPIRY_DAYS) {
+    return null;
+  }
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + rawDays);
+  return expiresAt;
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -189,5 +232,146 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   } catch (err) {
     console.error("api/admin/document-uploads/[id] GET error:", err);
     return NextResponse.json({ error: "Failed to fetch document upload request" }, { status: 500 });
+  }
+}
+
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getCurrentUser(req);
+  const { id } = await params;
+  const safeId = typeof id === "string" ? id.trim() : "";
+
+  if (!user || (user.role !== "ADMIN" && user.role !== "TECHNICIAN")) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!safeId) {
+    return NextResponse.json({ error: "Document upload request id is required" }, { status: 400 });
+  }
+
+  const body = await parseBody(req);
+  if (!body) {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const expiresAt = normalizeExpiresAt(body.expiresAt ?? body.expires_at, body.expiresInDays ?? body.expires_in_days);
+  if (!expiresAt) {
+    return NextResponse.json({ error: "Expiry must be a future date or 1-30 days from now" }, { status: 400 });
+  }
+
+  try {
+    const existingRequest = await prisma.document_upload_requests.findUnique({
+      where: { id: safeId },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!existingRequest) {
+      return NextResponse.json({ error: "Document upload request not found" }, { status: 404 });
+    }
+
+    if (existingRequest.status === "SUBMITTED") {
+      return NextResponse.json({ error: "Submitted document upload requests cannot be extended" }, { status: 409 });
+    }
+
+    if (existingRequest.status === "CANCELLED") {
+      return NextResponse.json({ error: "Cancelled document upload requests cannot be extended" }, { status: 409 });
+    }
+
+    const updatedRequest = await prisma.document_upload_requests.update({
+      where: { id: existingRequest.id },
+      data: {
+        expires_at: expiresAt,
+        status: "PENDING",
+      },
+      select: {
+        id: true,
+        status: true,
+        upload_mode: true,
+        required_documents: true,
+        expires_at: true,
+        updated_at: true,
+      },
+    });
+
+    return NextResponse.json({
+      ok: true,
+      request: {
+        id: updatedRequest.id,
+        status: updatedRequest.status,
+        uploadMode: updatedRequest.upload_mode,
+        requiredDocuments: updatedRequest.required_documents,
+        expiresAt: updatedRequest.expires_at.toISOString(),
+        updatedAt: updatedRequest.updated_at.toISOString(),
+      },
+    });
+  } catch (err) {
+    console.error("api/admin/document-uploads/[id] PATCH error:", err);
+    return NextResponse.json({ error: "Failed to extend document upload request" }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const user = await getCurrentUser(req);
+  const { id } = await params;
+  const safeId = typeof id === "string" ? id.trim() : "";
+
+  if (!user || (user.role !== "ADMIN" && user.role !== "TECHNICIAN")) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!safeId) {
+    return NextResponse.json({ error: "Document upload request id is required" }, { status: 400 });
+  }
+
+  try {
+    const existingRequest = await prisma.document_upload_requests.findUnique({
+      where: { id: safeId },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!existingRequest) {
+      return NextResponse.json({ error: "Document upload request not found" }, { status: 404 });
+    }
+
+    if (existingRequest.status === "SUBMITTED") {
+      return NextResponse.json({ error: "Submitted document upload requests cannot be cancelled" }, { status: 409 });
+    }
+
+    if (existingRequest.status === "CANCELLED") {
+      return NextResponse.json({
+        ok: true,
+        request: {
+          id: existingRequest.id,
+          status: existingRequest.status,
+        },
+      });
+    }
+
+    const cancelledRequest = await prisma.document_upload_requests.update({
+      where: { id: existingRequest.id },
+      data: { status: "CANCELLED" },
+      select: {
+        id: true,
+        status: true,
+        updated_at: true,
+      },
+    });
+
+    return NextResponse.json({
+      ok: true,
+      request: {
+        id: cancelledRequest.id,
+        status: cancelledRequest.status,
+        updatedAt: cancelledRequest.updated_at.toISOString(),
+      },
+    });
+  } catch (err) {
+    console.error("api/admin/document-uploads/[id] DELETE error:", err);
+    return NextResponse.json({ error: "Failed to cancel document upload request" }, { status: 500 });
   }
 }
