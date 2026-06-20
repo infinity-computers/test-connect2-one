@@ -1,7 +1,7 @@
 import "server-only";
 
 import { randomUUID } from "crypto";
-import { GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 const DEFAULT_KYC_PREFIX = "kyc";
@@ -34,6 +34,10 @@ type PresignedDownloadUrlInput = {
   key: string;
   fileName?: string;
   expiresIn?: number;
+};
+
+type ObjectMetadataInput = {
+  key: string;
 };
 
 let s3Client: S3Client | null = null;
@@ -130,6 +134,16 @@ export async function createPresignedDownloadUrl({
   });
 
   return getSignedUrl(getS3Client(), command, { expiresIn });
+}
+
+export async function getS3ObjectMetadata({ key }: ObjectMetadataInput) {
+  const { bucketName } = getS3Config();
+  const command = new HeadObjectCommand({
+    Bucket: bucketName,
+    Key: key,
+  });
+
+  return getS3Client().send(command);
 }
 
 export const S3_KYC_UPLOAD_CONTENT_TYPE = PDF_CONTENT_TYPE;
