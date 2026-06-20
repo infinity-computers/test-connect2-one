@@ -313,6 +313,12 @@ export default function AdminNewConnectionsClient() {
             </div>
             <div className="flex flex-col gap-2 sm:flex-row">
               <button
+                onClick={() => onNavigate("/admin/document-uploads")}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-semibold text-slate-100 hover:bg-slate-800"
+              >
+                <CheckSquare size={15} /> KYC Review
+              </button>
+              <button
                 onClick={() => setCreateOpen(true)}
                 className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-400"
               >
