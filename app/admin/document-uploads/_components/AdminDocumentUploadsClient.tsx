@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, CheckCircle2, Download, FileText, Loader2, RefreshCw, Send, ShieldCheck, TimerReset, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Download, FileText, Loader2, RefreshCw, Send, ShieldCheck, TimerReset, UploadCloud, XCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../../../../context/AuthContext";
 
@@ -78,6 +78,7 @@ export default function AdminDocumentUploadsClient() {
   const [requests, setRequests] = useState<KycRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [uploadingKey, setUploadingKey] = useState<string | null>(null);
   const [status, setStatus] = useState("all");
   const [error, setError] = useState("");
   const [message, setMessage] = useState("");
@@ -134,6 +135,65 @@ export default function AdminDocumentUploadsClient() {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || "Failed to create download link");
     window.open(data.download.url, "_blank", "noopener,noreferrer");
+  };
+
+  const uploadManualDocument = async (request: KycRequest, documentType: string, file: File | null) => {
+    if (!file) return;
+
+    if (file.type !== "application/pdf" || !file.name.toLowerCase().endsWith(".pdf")) {
+      setError("Only PDF files are supported.");
+      return;
+    }
+
+    const key = `${request.id}:${documentType}`;
+    setUploadingKey(key);
+    setBusyId(request.id);
+    setError("");
+    setMessage("");
+
+    try {
+      const presignRes = await fetch(`/api/admin/document-uploads/${request.id}/presign`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          documentType,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+        }),
+      });
+      const presignData = await presignRes.json();
+      if (!presignRes.ok) throw new Error(presignData.error || "Failed to prepare upload");
+
+      const uploadRes = await fetch(presignData.upload.url, {
+        method: "PUT",
+        headers: presignData.upload.headers,
+        body: file,
+      });
+      if (!uploadRes.ok) throw new Error("Failed to upload file to storage");
+
+      const confirmRes = await fetch(`/api/admin/document-uploads/${request.id}/confirm`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          documentType,
+          fileName: file.name,
+          fileSize: file.size,
+          mimeType: file.type,
+          s3Key: presignData.upload.s3Key,
+        }),
+      });
+      const confirmData = await confirmRes.json();
+      if (!confirmRes.ok) throw new Error(confirmData.error || "Failed to confirm upload");
+
+      setMessage("Document uploaded successfully.");
+      await fetchRequests();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to upload document");
+    } finally {
+      setUploadingKey(null);
+      setBusyId(null);
+    }
   };
 
   const resendLink = (request: KycRequest) => runAction(request.id, async () => {
@@ -288,15 +348,36 @@ export default function AdminDocumentUploadsClient() {
                       <div className="flex flex-wrap gap-2">
                         {request.requiredDocuments.map((documentType) => {
                           const complete = uploadedTypes.has(documentType);
+                          const uploadKey = `${request.id}:${documentType}`;
+                          const canUpload = request.uploadMode === "MANUAL_UPLOAD" && request.status === "PENDING" && !complete;
+
                           return (
-                            <span key={documentType} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold ${complete ? "border-emerald-800 bg-emerald-950/40 text-emerald-200" : "border-slate-800 bg-slate-900 text-slate-400"}`}>
+                            <div key={documentType} className={`inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold ${complete ? "border-emerald-800 bg-emerald-950/40 text-emerald-200" : "border-slate-800 bg-slate-900 text-slate-400"}`}>
                               {complete && <CheckCircle2 size={13} />}
-                              {formatDocument(documentType)}
-                            </span>
+                              <span>{formatDocument(documentType)}</span>
+                              {canUpload && (
+                                <label className="inline-flex cursor-pointer items-center gap-1 rounded-full border border-blue-800/70 bg-blue-950/40 px-2 py-0.5 text-blue-200 hover:text-white">
+                                  {uploadingKey === uploadKey ? <Loader2 size={12} className="animate-spin" /> : <UploadCloud size={12} />}
+                                  Upload
+                                  <input
+                                    type="file"
+                                    accept="application/pdf,.pdf"
+                                    className="hidden"
+                                    disabled={Boolean(uploadingKey)}
+                                    onChange={(event) => {
+                                      const file = event.target.files?.[0] ?? null;
+                                      event.target.value = "";
+                                      uploadManualDocument(request, documentType, file);
+                                    }}
+                                  />
+                                </label>
+                              )}
+                            </div>
                           );
                         })}
                       </div>
                       {remaining.length > 0 && <p className="mt-3 text-xs text-slate-500">Remaining: {remaining.map(formatDocument).join(", ")}</p>}
+                      {request.uploadMode === "MANUAL_UPLOAD" && request.status === "PENDING" && remaining.length > 0 && <p className="mt-2 text-xs text-blue-200/80">Upload PDFs here to complete manual KYC before approval.</p>}
                     </div>
 
                     <div className="rounded-2xl border border-slate-800 bg-slate-950/60 p-4">
