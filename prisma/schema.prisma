@@ -8,51 +8,53 @@ datasource db {
 }
 
 model users {
-  id               String          @id @default(uuid())
-  name             String?
-  email            String?
-  phone            String?
-  password         String?
-  role             ROLE            @default(USER)
-  auth_type        users_auth_type @default(PASSWORD)
-  status           String?
-  created_at       DateTime?       @default(now())
-  updated_at       DateTime?       @default(now())
-  tickets          tickets[]       @relation("UserTickets")
-  assigned_tickets tickets[]       @relation("TechnicianAssignments")
-  otp_challenges   otp_challenges[]
-  payments         payments[]
-  subscriptions    subscriptions[]
-  new_connection_requests new_connection_requests[]
+  id                               String                     @id @default(uuid())
+  name                             String?
+  email                            String?
+  phone                            String?
+  password                         String?
+  role                             ROLE                       @default(USER)
+  auth_type                        users_auth_type            @default(PASSWORD)
+  status                           String?
+  created_at                       DateTime?                  @default(now())
+  updated_at                       DateTime?                  @default(now())
+  tickets                          tickets[]                  @relation("UserTickets")
+  assigned_tickets                 tickets[]                  @relation("TechnicianAssignments")
+  otp_challenges                   otp_challenges[]
+  payments                         payments[]
+  subscriptions                    subscriptions[]
+  new_connection_requests          new_connection_requests[]
+  created_document_upload_requests document_upload_requests[] @relation("DocumentUploadRequestCreator")
+  uploaded_document_files          document_upload_files[]    @relation("DocumentUploadFileUploader")
 
   @@index([role], map: "idx_users_role")
 }
 
 model tickets {
-  id                     String          @id @default(uuid())
+  id                     String                   @id @default(uuid())
   user_id                String?
   assigned_technician_id String?
-  source                 ticket_source   @default(AUTHENTICATED)
+  source                 ticket_source            @default(AUTHENTICATED)
   reporter_name          String?
   reporter_phone         String?
   reporter_email         String?
   reporter_address       String?
   issue_type             ticket_issue_type
   explicit_description   String?
-  status                 ticket_status   @default(PENDING_APPROVAL)
-  created_at             DateTime        @default(now())
-  updated_at             DateTime        @default(now()) @updatedAt
+  status                 ticket_status            @default(PENDING_APPROVAL)
+  created_at             DateTime                 @default(now())
+  updated_at             DateTime                 @default(now()) @updatedAt
   city                   String?
   state                  String?
   pin_code               String?
   assigned_at            DateTime?
-  reminder_enabled       Boolean         @default(false)
+  reminder_enabled       Boolean                  @default(false)
   last_reminder_sent_at  DateTime?
-  tracking_code          String          @unique
-  users                  users?          @relation("UserTickets", fields: [user_id], references: [id], onUpdate: Restrict, map: "fk_ticket_user")
-  assigned_technician    users?          @relation("TechnicianAssignments", fields: [assigned_technician_id], references: [id], onUpdate: Restrict, map: "fk_ticket_assigned_technician")
+  tracking_code          String                   @unique
+  users                  users?                   @relation("UserTickets", fields: [user_id], references: [id], onUpdate: Restrict, map: "fk_ticket_user")
+  assigned_technician    users?                   @relation("TechnicianAssignments", fields: [assigned_technician_id], references: [id], onUpdate: Restrict, map: "fk_ticket_assigned_technician")
   otp_challenges         otp_challenges[]
-  new_connection_request  new_connection_requests?
+  new_connection_request new_connection_requests?
 
   @@index([user_id], map: "idx_tickets_user_id")
   @@index([assigned_technician_id, status], map: "idx_tickets_assigned_status")
@@ -86,14 +88,14 @@ model payments {
 }
 
 model plan_variants {
-  id              String          @id @default(uuid())
-  plan_id         String
-  speed_mbps      Int
-  duration_months Int
-  price           Decimal
-  created_at      DateTime        @default(now())
-  plans           plans           @relation(fields: [plan_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "plan_variants_ibfk_1")
-  subscriptions   subscriptions[]
+  id                      String                    @id @default(uuid())
+  plan_id                 String
+  speed_mbps              Int
+  duration_months         Int
+  price                   Decimal
+  created_at              DateTime                  @default(now())
+  plans                   plans                     @relation(fields: [plan_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "plan_variants_ibfk_1")
+  subscriptions           subscriptions[]
   new_connection_requests new_connection_requests[]
 
   @@unique([plan_id, speed_mbps, duration_months], map: "unique_variant")
@@ -156,34 +158,34 @@ model otp_challenges {
   @@index([expires_at], map: "idx_otp_expires")
 }
 
-
 model new_connection_requests {
-  id                         String                @id @default(uuid())
-  user_id                    String?
-  plan_variant_id            String
-  ticket_id                  String?               @unique(map: "uk_new_connection_ticket_id")
-  customer_name              String
-  customer_email             String
-  customer_phone             String
-  installation_address       String
-  city                       String
-  state                      String
-  pin_code                   String
-  landmark                   String?
-  notes                      String?
-  amount                     Decimal
-  status                     new_connection_status @default(PENDING_PAYMENT)
-  cashfree_order_id          String                @unique(map: "uk_cashfree_order_id")
-  cashfree_payment_id        String?
+  id                          String                     @id @default(uuid())
+  user_id                     String?
+  plan_variant_id             String
+  ticket_id                   String?                    @unique(map: "uk_new_connection_ticket_id")
+  customer_name               String
+  customer_email              String
+  customer_phone              String
+  installation_address        String
+  city                        String
+  state                       String
+  pin_code                    String
+  landmark                    String?
+  notes                       String?
+  amount                      Decimal
+  status                      new_connection_status      @default(PENDING_PAYMENT)
+  cashfree_order_id           String                     @unique(map: "uk_cashfree_order_id")
+  cashfree_payment_id         String?
   cashfree_payment_session_id String?
-  paid_at                    DateTime?
-  admin_notified_at          DateTime?
-  customer_notified_at       DateTime?
-  created_at                 DateTime              @default(now())
-  updated_at                 DateTime              @updatedAt
-  users                      users?                @relation(fields: [user_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "new_connection_requests_user_id_fkey")
-  plan_variants              plan_variants         @relation(fields: [plan_variant_id], references: [id], onUpdate: Restrict, map: "new_connection_requests_plan_variant_id_fkey")
-  tickets                    tickets?              @relation(fields: [ticket_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "new_connection_requests_ticket_id_fkey")
+  paid_at                     DateTime?
+  admin_notified_at           DateTime?
+  customer_notified_at        DateTime?
+  created_at                  DateTime                   @default(now())
+  updated_at                  DateTime                   @updatedAt
+  users                       users?                     @relation(fields: [user_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "new_connection_requests_user_id_fkey")
+  plan_variants               plan_variants              @relation(fields: [plan_variant_id], references: [id], onUpdate: Restrict, map: "new_connection_requests_plan_variant_id_fkey")
+  tickets                     tickets?                   @relation(fields: [ticket_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "new_connection_requests_ticket_id_fkey")
+  document_upload_requests    document_upload_requests[]
 
   @@index([status, created_at], map: "idx_new_connection_status_created")
   @@index([customer_phone], map: "idx_new_connection_customer_phone")
@@ -201,6 +203,71 @@ model site_notifications {
   updated_at  DateTime @updatedAt
 
   @@index([expires_at], map: "idx_site_notifications_expires_at")
+}
+
+model document_upload_requests {
+  id                        String                  @id @default(uuid())
+  token                     String                  @unique(map: "uk_document_upload_requests_token")
+  new_connection_request_id String
+  status                    document_upload_status  @default(PENDING)
+  upload_mode               document_upload_mode    @default(CUSTOMER_LINK)
+  required_documents        document_type[]         @default([ID_PROOF, ADDRESS_PROOF])
+  expires_at                DateTime
+  created_by_id             String?
+  created_at                DateTime                @default(now())
+  updated_at                DateTime                @updatedAt
+  new_connection_request    new_connection_requests @relation(fields: [new_connection_request_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "document_upload_requests_new_connection_request_id_fkey")
+  created_by                users?                  @relation("DocumentUploadRequestCreator", fields: [created_by_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "document_upload_requests_created_by_id_fkey")
+  files                     document_upload_files[]
+
+  @@index([new_connection_request_id], map: "idx_document_upload_requests_connection")
+  @@index([created_by_id], map: "idx_document_upload_requests_created_by")
+  @@index([status, expires_at], map: "idx_document_upload_requests_status_expires")
+}
+
+model document_upload_files {
+  id                         String                   @id @default(uuid())
+  document_upload_request_id String
+  document_type              document_type
+  original_file_name         String
+  s3_key                     String                   @unique(map: "uk_document_upload_files_s3_key")
+  mime_type                  String
+  file_size                  Int
+  uploaded_by_id             String?
+  uploaded_by_type           document_upload_actor
+  created_at                 DateTime                 @default(now())
+  document_upload_request    document_upload_requests @relation(fields: [document_upload_request_id], references: [id], onDelete: Cascade, onUpdate: Restrict, map: "document_upload_files_request_id_fkey")
+  uploaded_by                users?                   @relation("DocumentUploadFileUploader", fields: [uploaded_by_id], references: [id], onDelete: SetNull, onUpdate: Restrict, map: "document_upload_files_uploaded_by_id_fkey")
+
+  @@index([document_upload_request_id], map: "idx_document_upload_files_request")
+  @@index([document_type], map: "idx_document_upload_files_type")
+  @@index([uploaded_by_id], map: "idx_document_upload_files_uploaded_by")
+}
+
+enum document_upload_status {
+  PENDING
+  SUBMITTED
+  EXPIRED
+  CANCELLED
+}
+
+enum document_upload_mode {
+  CUSTOMER_LINK
+  MANUAL_UPLOAD
+}
+
+enum document_type {
+  ID_PROOF
+  ADDRESS_PROOF
+  CUSTOMER_PHOTO
+  BUSINESS_PROOF
+  OTHER
+}
+
+enum document_upload_actor {
+  CUSTOMER
+  ADMIN
+  TECHNICIAN
 }
 
 enum new_connection_status {
