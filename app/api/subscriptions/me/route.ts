@@ -22,17 +22,43 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const subscription = await prisma.subscriptions.findFirst({
-      where: { user_id: user.userId },
-      orderBy: { created_at: "desc" },
-      include: {
-        plan_variants: {
-          include: {
-            plans: true,
-          },
+    const subscriptionInclude = {
+      plan_variants: {
+        include: {
+          plans: true,
         },
       },
-    });
+    } as const;
+
+    const now = new Date();
+    const subscription =
+      (await prisma.subscriptions.findFirst({
+        where: {
+          user_id: user.userId,
+          status: "active",
+          start_date: { lte: now },
+          end_date: { gte: now },
+        },
+        orderBy: { end_date: "desc" },
+        include: subscriptionInclude,
+      })) ??
+      (await prisma.subscriptions.findFirst({
+        where: {
+          user_id: user.userId,
+          status: "active",
+          start_date: { gt: now },
+        },
+        orderBy: { start_date: "asc" },
+        include: subscriptionInclude,
+      })) ??
+      (await prisma.subscriptions.findFirst({
+        where: {
+          user_id: user.userId,
+          status: "active",
+        },
+        orderBy: { end_date: "desc" },
+        include: subscriptionInclude,
+      }));
 
     if (!subscription) {
       return NextResponse.json({ subscription: null });
