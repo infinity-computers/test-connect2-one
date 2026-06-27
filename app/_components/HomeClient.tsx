@@ -20,7 +20,6 @@ import {
   TicketCheck,
   Wifi,
   Wrench,
-  Zap,
   ClipboardList,
   MapPinned,
   Send,
@@ -42,34 +41,12 @@ import {
 import { plans } from "../../data/mockPlans";
 import { CoverageSection } from "./LocalCoverageSection";
 import HeroSection from "./HeroSection";
+import WhatWeOffer from "./WhatWeOffer";
 
 const trustStats = [
   { label: "Fiber speeds", value: "40-300 Mbps" },
   { label: "Monthly FUP", value: "3.5 TB" },
   { label: "Post-FUP speed", value: "2 Mbps" },
-];
-
-const featureCards = [
-  {
-    icon: Shield,
-    title: "Transparent broadband plans",
-    desc: "Clear 3, 6, and 12 month pricing with installation scope and FUP terms shown upfront.",
-  },
-  {
-    icon: Headphones,
-    title: "Local Bharuch support",
-    desc: "A nearby team for onboarding, service requests, upgrades, and issue follow-ups.",
-  },
-  {
-    icon: Zap,
-    title: "Built for everyday speed",
-    desc: "Stable fiber plans for work calls, streaming, online classes, gaming, and home offices.",
-  },
-  {
-    icon: TicketCheck,
-    title: "Tracked service workflow",
-    desc: "Every service request can move through approval, assignment, progress, and resolution.",
-  },
 ];
 
 const processSteps = [
@@ -206,16 +183,15 @@ function ConnectionProcessTimeline({
       processSteps.length - 1,
       Math.floor(latest * processSteps.length),
     );
-
     setActiveStep(nextStep);
   });
 
   return (
     <div className="mx-auto w-full max-w-[640px] lg:mx-0">
       <div ref={timelineRef} className="relative py-2">
+        {/* Vertical line */}
         <div className="pointer-events-none absolute bottom-12 left-[22.5px] top-7 w-[3px] overflow-hidden rounded-full [mask-image:linear-gradient(to_bottom,transparent_0%,black_12%,black_88%,transparent_100%)] sm:left-[26.5px]">
           <div className="absolute inset-0 rounded-full bg-sky-200/10" />
-
           <motion.div
             className="absolute inset-x-0 top-0 h-full origin-top rounded-full bg-gradient-to-b from-cyan-200 via-sky-300 to-cyan-500/20 shadow-[0_0_26px_rgba(56,189,248,0.55)]"
             style={{ scaleY: shouldReduceMotion ? 1 : lineScale }}
@@ -226,12 +202,14 @@ function ConnectionProcessTimeline({
           {processSteps.map((step, index) => {
             const Icon = processStepIcons[index] ?? ClipboardList;
             const isActive = shouldReduceMotion || index <= activeStep;
+            const isCurrentStep = !shouldReduceMotion && index === activeStep;
 
             return (
               <div
                 key={step.title}
                 className="group relative flex gap-4 sm:gap-5"
               >
+                {/* Step circle */}
                 <div
                   className={`relative z-10 flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#061827] text-sm font-black transition duration-300 sm:h-14 sm:w-14 ${
                     isActive
@@ -239,6 +217,35 @@ function ConnectionProcessTimeline({
                       : "border border-sky-200/20 text-slate-300 shadow-[0_0_16px_rgba(34,211,238,0.12)] ring-4 ring-cyan-300/5 group-hover:border-cyan-100/50 group-hover:text-cyan-100 group-hover:shadow-[0_0_28px_rgba(34,211,238,0.28)]"
                   }`}
                 >
+                  {/* Pulse rings — only on the current active step */}
+                  {isCurrentStep && (
+                    <>
+                      <motion.span
+                        className="absolute -inset-2 rounded-full border border-cyan-300/40"
+                        aria-hidden="true"
+                        animate={{ scale: [0.9, 1.5], opacity: [0.5, 0] }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeOut",
+                          delay: 0,
+                        }}
+                      />
+                      <motion.span
+                        className="absolute -inset-2 rounded-full border border-cyan-300/25"
+                        aria-hidden="true"
+                        animate={{ scale: [0.9, 1.7], opacity: [0.3, 0] }}
+                        transition={{
+                          duration: 2,
+                          repeat: Infinity,
+                          ease: "easeOut",
+                          delay: 0.5,
+                        }}
+                      />
+                    </>
+                  )}
+
+                  {/* Inner glow */}
                   <span
                     className={`absolute inset-1 rounded-full blur-sm transition duration-300 ${
                       isActive ? "bg-cyan-300/14" : "bg-cyan-300/5"
@@ -247,13 +254,24 @@ function ConnectionProcessTimeline({
                   <span className="relative">{index + 1}</span>
                 </div>
 
-                <div className="min-w-0 flex-1 rounded-2xl border border-sky-200/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018))] px-4 py-4 shadow-lg shadow-slate-950/10 backdrop-blur transition duration-300 group-hover:border-cyan-200/25 group-hover:bg-white/[0.045] sm:px-5">
+                {/* Step card */}
+                <motion.div
+                  className="min-w-0 flex-1 rounded-2xl border border-sky-200/10 bg-[linear-gradient(135deg,rgba(255,255,255,0.055),rgba(255,255,255,0.018))] px-4 py-4 shadow-lg shadow-slate-950/10 backdrop-blur transition duration-300 group-hover:border-cyan-200/25 group-hover:bg-white/[0.045] sm:px-5"
+                  animate={
+                    isCurrentStep && !shouldReduceMotion
+                      ? {
+                          borderColor: "rgba(34,211,238,0.28)",
+                          backgroundColor: "rgba(255,255,255,0.04)",
+                        }
+                      : {}
+                  }
+                  transition={{ duration: 0.4 }}
+                >
                   <div className="flex items-start justify-between gap-4">
                     <div>
                       <h3 className="text-base font-black tracking-[-0.02em] text-white sm:text-lg">
                         {step.title}
                       </h3>
-
                       <p className="mt-1.5 max-w-xl text-sm leading-6 text-slate-400">
                         {step.desc}
                       </p>
@@ -261,15 +279,31 @@ function ConnectionProcessTimeline({
 
                     <div
                       className={`mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border transition duration-300 ${
-                        isActive
-                          ? "border-cyan-200/25 bg-cyan-300/10 text-cyan-100"
-                          : "border-sky-200/10 bg-white/[0.03] text-slate-500 group-hover:text-cyan-100"
+                        isCurrentStep
+                          ? "border-cyan-200/40 bg-cyan-300/15 text-cyan-100 shadow-[0_0_14px_rgba(34,211,238,0.2)]"
+                          : isActive
+                            ? "border-cyan-200/25 bg-cyan-300/10 text-cyan-100"
+                            : "border-sky-200/10 bg-white/[0.03] text-slate-500 group-hover:text-cyan-100"
                       }`}
                     >
-                      <Icon size={16} />
+                      {/* Icon pulses subtly on current step */}
+                      {isCurrentStep && !shouldReduceMotion ? (
+                        <motion.span
+                          animate={{ scale: [1, 1.18, 1] }}
+                          transition={{
+                            duration: 2,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }}
+                        >
+                          <Icon size={16} />
+                        </motion.span>
+                      ) : (
+                        <Icon size={16} />
+                      )}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               </div>
             );
           })}
@@ -427,8 +461,11 @@ export default function HomeClient() {
     <div className="min-h-screen overflow-hidden bg-[#030913] pt-16 text-white">
       <HeroSection onNavigate={onNavigate} />
 
-      <section className="relative bg-[#050d18] py-16 sm:py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      {/* <section className="relative overflow-hidden bg-[#050d18] py-16 sm:py-20">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_14%_16%,rgba(34,211,238,0.10),transparent_30%),radial-gradient(circle_at_86%_72%,rgba(59,130,246,0.08),transparent_34%)]" />
+        <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/18 to-transparent" />
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr] lg:items-end">
             <div>
               <p className="text-sm font-bold uppercase tracking-[0.28em] text-cyan-200/75">
@@ -440,31 +477,15 @@ export default function HomeClient() {
               </h2>
             </div>
             <p className="max-w-2xl text-base leading-8 text-slate-350 lg:ml-auto">
-              The website should communicate more than speed. It should show
-              customers that plans, service requests, upgrades, support, and
-              installation are handled with accountability.
+              From choosing a plan to raising a service request, Connect One
+              keeps the broadband journey clear, trackable, and locally
+              supported.
             </p>
           </div>
-
-          <div className="mt-10 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {featureCards.map(({ icon: Icon, title, desc }) => (
-              <div
-                key={title}
-                className="group rounded-[1.7rem] border border-white/10 bg-white/[0.045] p-6 shadow-xl shadow-slate-950/20 transition duration-300 hover:-translate-y-1 hover:border-cyan-200/30 hover:bg-white/[0.065]"
-              >
-                <div className="mb-5 inline-flex rounded-2xl border border-cyan-200/15 bg-cyan-300/10 p-3 text-cyan-100 transition group-hover:scale-105">
-                  <Icon size={24} />
-                </div>
-                <h3 className="text-lg font-black tracking-[-0.02em] text-white">
-                  {title}
-                </h3>
-                <p className="mt-3 text-sm leading-6 text-slate-400">{desc}</p>
-              </div>
-            ))}
-          </div>
         </div>
-      </section>
-
+      </section> */}
+      <WhatWeOffer />
+      {/* 
       {user && user.role === "USER" && (
         <section className="bg-[#030913] py-14">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -607,14 +628,24 @@ export default function HomeClient() {
             </div>
           </div>
         </section>
-      )}
+      )} */}
 
       <section className="relative bg-[#050d18] py-16 sm:py-20">
         <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-emerald-100">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_50%,rgba(34,211,238,0.05),transparent_40%)]" />
+
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[0.9fr_1.1fr] lg:items-center">
+            {/* Left: heading */}
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+              whileInView={
+                shouldReduceMotion ? undefined : { opacity: 1, y: 0 }
+              }
+              viewport={{ once: true, amount: 0.3 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+            >
+              <div className="inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/10 px-4 py-2 text-xs font-black uppercase tracking-[0.18em] text-cyan-100">
                 <Sparkles size={14} /> Popular starting point
               </div>
               <h2 className="mt-5 text-4xl font-black tracking-[-0.045em] text-white sm:text-5xl">
@@ -625,31 +656,83 @@ export default function HomeClient() {
                 offices while still showing speed, FUP, duration, and renewal
                 details clearly before booking.
               </p>
-            </div>
+              <button
+                onClick={() => onNavigate("/plans")}
+                className="mt-8 inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.05] px-5 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:border-cyan-200/30 hover:bg-white/[0.08]"
+              >
+                See all plans <ArrowRight size={15} />
+              </button>
+            </motion.div>
 
+            {/* Right: plan cards */}
             <div className="grid gap-4 sm:grid-cols-3">
-              {ecoPlans.map((plan) => (
-                <div
+              {ecoPlans.map((plan, index) => (
+                <motion.div
                   key={plan.id}
-                  className="flex min-h-[230px] flex-col rounded-[1.7rem] border border-white/10 bg-white/[0.045] p-5 transition hover:-translate-y-1 hover:border-emerald-200/30"
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
+                  whileInView={
+                    shouldReduceMotion ? undefined : { opacity: 1, y: 0 }
+                  }
+                  viewport={{ once: true, amount: 0.2 }}
+                  transition={{
+                    duration: 0.45,
+                    delay: shouldReduceMotion ? 0 : index * 0.08,
+                    ease: "easeOut",
+                  }}
+                  onClick={() => onNavigate("/plans")}
+                  className="group relative flex min-h-[240px] cursor-pointer flex-col overflow-hidden rounded-[1.7rem] border border-white/10 bg-white/[0.045] p-5 transition duration-300 hover:-translate-y-1.5 hover:border-cyan-200/35 hover:shadow-[0_16px_48px_rgba(34,211,238,0.08)]"
                 >
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-200/70">
-                    {plan.category}
-                  </p>
-                  <h3 className="mt-3 text-3xl font-black text-white">
-                    {plan.speed}
-                    <span className="text-base text-slate-400"> Mbps</span>
-                  </h3>
-                  <p className="mt-3 text-sm leading-6 text-slate-400">
-                    FUP Data Limit: 3.5 TB/Month. Post-FUP Speed: 2 Mbps.
-                  </p>
-                  <div className="mt-auto pt-5">
-                    <p className="text-xs text-slate-500">Starting at</p>
-                    <p className="text-2xl font-black text-cyan-200">
-                      ₹{plan.variants[0].price.toLocaleString()}
+                  {/* Default content */}
+                  <div className="flex flex-1 flex-col transition-all duration-300 group-hover:opacity-0 group-hover:-translate-y-1">
+                    <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-200/70">
+                      {plan.category}
                     </p>
+                    <h3 className="mt-3 text-3xl font-black text-white">
+                      {plan.speed}
+                      <span className="text-base text-slate-400"> Mbps</span>
+                    </h3>
+                    <p className="mt-3 text-sm leading-6 text-slate-400">
+                      FUP Data Limit: 3.5 TB/month. Post-FUP Speed: 2 Mbps.
+                    </p>
+                    <div className="mt-auto pt-5">
+                      <p className="text-xs text-slate-500">Starting at</p>
+                      <p className="text-2xl font-black text-cyan-200">
+                        ₹{plan.variants[0].price.toLocaleString()}
+                      </p>
+                    </div>
                   </div>
-                </div>
+
+                  {/* Hover: price breakdown slides up */}
+                  <div className="absolute inset-0 flex translate-y-3 flex-col justify-end rounded-[1.7rem] bg-[#060f1c]/95 p-5 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.1),transparent_55%)] rounded-[1.7rem]" />
+                    <div className="relative">
+                      <p className="text-xs font-bold uppercase tracking-[0.18em] text-cyan-200/70">
+                        {plan.category} · {plan.speed} Mbps
+                      </p>
+                      <div className="mt-4 space-y-2.5">
+                        {plan.variants.map(
+                          (v: { months: number; price: number }) => (
+                            <div
+                              key={v.months}
+                              className="flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5"
+                            >
+                              <span className="text-xs font-bold text-slate-400">
+                                {v.months} {v.months === 1 ? "month" : "months"}
+                              </span>
+                              <span className="text-sm font-black text-cyan-200">
+                                ₹{v.price.toLocaleString()}
+                              </span>
+                            </div>
+                          ),
+                        )}
+                      </div>
+                      <div className="mt-4 flex items-center gap-1.5 text-xs font-bold text-cyan-300/70">
+                        <ArrowRight size={12} />
+                        View full plan details
+                      </div>
+                    </div>
+                  </div>
+                </motion.div>
               ))}
             </div>
           </div>
@@ -683,7 +766,7 @@ export default function HomeClient() {
 
       {/* <CoverageSection /> */}
 
-      <section className="relative overflow-hidden bg-[#030913] py-16 sm:py-20">
+      {/* <section className="relative overflow-hidden bg-[#030913] py-16 sm:py-20">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_10%,rgba(34,211,238,0.10),transparent_30%)]" />
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -744,7 +827,7 @@ export default function HomeClient() {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       <section className="relative overflow-hidden bg-[#050d18] py-16 sm:py-20">
         <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(59,130,246,0.12),transparent_34%)]" />
@@ -887,7 +970,7 @@ export default function HomeClient() {
         </motion.div>
       </section>
 
-      {!user && (
+      {/* {!user && (
         <section className="relative overflow-hidden bg-[#050d18] py-16 text-white sm:py-20">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(34,211,238,0.18),transparent_36%)]" />
           <div className="relative mx-auto max-w-4xl px-4 text-center">
@@ -917,7 +1000,7 @@ export default function HomeClient() {
             </div>
           </div>
         </section>
-      )}
+      )} */}
     </div>
   );
 }
