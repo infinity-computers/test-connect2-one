@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState, memo } from "react";
+import { useEffect, useState } from "react";
 import {
   motion,
   AnimatePresence,
   useReducedMotion,
   type Variants,
-} from "framer-motion";
+} from "motion/react";
 import {
   Wifi,
   ArrowRight,
@@ -15,23 +15,12 @@ import {
   Headphones,
   Sparkles,
 } from "lucide-react";
+import FiberCanvas from "../../components/ui/FiberCanvas";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 interface HeroSectionProps {
   onNavigate: (path: string) => void;
 }
-
-// ─── Constants ───────────────────────────────────────────────────────────────
-const CONFIG = {
-  FIBER: {
-    NODE_COUNT: 52,
-    MAX_DISTANCE: 170,
-    NODE_RADIUS: 1.35,
-    OPACITY: 0.18,
-    LINE_WIDTH: 0.5,
-    SPEED: 0.65,
-  },
-} as const;
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 const trustStats = [
@@ -55,169 +44,22 @@ const features = [
   { icon: Headphones, text: "Local support" },
 ];
 
-// ─── Fiber Canvas ────────────────────────────────────────────────────────────
-const FiberCanvas = memo(function FiberCanvas({
-  disabled,
-}: {
-  disabled: boolean;
-}) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [isVisible, setIsVisible] = useState(true);
+function useIsLowEndDevice() {
+  const [isLowEnd, setIsLowEnd] = useState(false);
 
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      setIsVisible(!document.hidden);
-    };
+    const cpuCores = navigator.hardwareConcurrency;
+    const deviceMemory = (navigator as Navigator & { deviceMemory?: number })
+      .deviceMemory;
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    const hasLowCoreCount = typeof cpuCores === "number" && cpuCores <= 4;
+    const hasLowMemory = typeof deviceMemory === "number" && deviceMemory <= 2;
 
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
+    setIsLowEnd(hasLowCoreCount || hasLowMemory);
   }, []);
 
-  useEffect(() => {
-    if (disabled) return;
-
-    const canvas = canvasRef.current as HTMLCanvasElement;
-    if (!canvas) return;
-
-    const context = canvas.getContext("2d") as CanvasRenderingContext2D;
-    if (!context) return;
-
-    let animId = 0;
-    let resizeTimeout: ReturnType<typeof setTimeout> | undefined;
-
-    const NODE_COUNT = CONFIG.FIBER.NODE_COUNT;
-    const MAX_DIST = CONFIG.FIBER.MAX_DISTANCE;
-    const NODE_RADIUS = CONFIG.FIBER.NODE_RADIUS;
-    const OPACITY = CONFIG.FIBER.OPACITY;
-    const LINE_WIDTH = CONFIG.FIBER.LINE_WIDTH;
-    const SPEED = CONFIG.FIBER.SPEED;
-
-    type NodePoint = {
-      x: number;
-      y: number;
-      vx: number;
-      vy: number;
-    };
-
-    let nodes: NodePoint[] = [];
-    let width = 0;
-    let height = 0;
-
-    function createNodes() {
-      nodes = Array.from({ length: NODE_COUNT }, () => ({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * SPEED,
-        vy: (Math.random() - 0.5) * SPEED,
-      }));
-    }
-
-    function resize() {
-      const parent = canvas.parentElement;
-      if (!parent) return;
-
-      const dpr = window.devicePixelRatio || 1;
-      const rect = parent.getBoundingClientRect();
-
-      width = rect.width;
-      height = rect.height;
-
-      canvas.width = Math.floor(width * dpr);
-      canvas.height = Math.floor(height * dpr);
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-
-      context.setTransform(dpr, 0, 0, dpr, 0, 0);
-      createNodes();
-    }
-
-    function draw() {
-      if (!isVisible) {
-        animId = requestAnimationFrame(draw);
-        return;
-      }
-
-      context.clearRect(0, 0, width, height);
-
-      for (const node of nodes) {
-        node.x += node.vx;
-        node.y += node.vy;
-
-        if (node.x < 0 || node.x > width) node.vx *= -1;
-        if (node.y < 0 || node.y > height) node.vy *= -1;
-      }
-
-      for (let i = 0; i < nodes.length; i += 1) {
-        for (let j = i + 1; j < nodes.length; j += 1) {
-          const dx = nodes[i].x - nodes[j].x;
-          const dy = nodes[i].y - nodes[j].y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-
-          if (distance < MAX_DIST) {
-            const alpha = (1 - distance / MAX_DIST) * OPACITY;
-
-            context.beginPath();
-            context.moveTo(nodes[i].x, nodes[i].y);
-            context.lineTo(nodes[j].x, nodes[j].y);
-            context.strokeStyle = `rgba(34, 211, 238, ${alpha})`;
-            context.lineWidth = LINE_WIDTH;
-            context.stroke();
-          }
-        }
-      }
-
-      for (const node of nodes) {
-        context.beginPath();
-        context.arc(node.x, node.y, NODE_RADIUS, 0, Math.PI * 2);
-        context.fillStyle = "rgba(103, 232, 249, 0.48)";
-        context.fill();
-      }
-
-      animId = requestAnimationFrame(draw);
-    }
-
-    const debouncedResize = () => {
-      if (resizeTimeout) clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(resize, 100);
-    };
-
-    resize();
-    draw();
-
-    const observer = new ResizeObserver(debouncedResize);
-
-    if (canvas.parentElement) {
-      observer.observe(canvas.parentElement);
-    }
-
-    window.addEventListener("resize", debouncedResize);
-
-    return () => {
-      cancelAnimationFrame(animId);
-      observer.disconnect();
-      window.removeEventListener("resize", debouncedResize);
-
-      if (resizeTimeout) {
-        clearTimeout(resizeTimeout);
-      }
-    };
-  }, [disabled, isVisible]);
-
-  if (disabled) return null;
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="pointer-events-none absolute inset-0 z-0 h-full w-full opacity-55"
-      aria-hidden="true"
-    />
-  );
-});
-
-FiberCanvas.displayName = "FiberCanvas";
+  return isLowEnd;
+}
 
 // ─── Soft Particles ──────────────────────────────────────────────────────────
 function SoftParticles({ disabled }: { disabled: boolean }) {
@@ -376,6 +218,8 @@ function FeaturePills() {
 // ─── Hero Section ────────────────────────────────────────────────────────────
 export default function HeroSection({ onNavigate }: HeroSectionProps) {
   const shouldReduceMotion = Boolean(useReducedMotion());
+  const isLowEnd = useIsLowEndDevice();
+  const disableBackgroundMotion = shouldReduceMotion || isLowEnd;
   const [isPrimaryHovering, setIsPrimaryHovering] = useState(false);
 
   const containerVariants: Variants = {
@@ -434,8 +278,19 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
       <div className="absolute left-1/2 top-0 z-0 h-px w-[72vw] -translate-x-1/2 bg-gradient-to-r from-transparent via-cyan-300/70 to-transparent" />
 
       {/* Background motion */}
-      <FiberCanvas disabled={shouldReduceMotion} />
-      <SoftParticles disabled={shouldReduceMotion} />
+      <FiberCanvas
+        disabled={disableBackgroundMotion}
+        opacity={0.55}
+        nodeCount={52}
+        mobileNodeCount={28}
+        connectionDistance={170}
+        speed={0.65}
+        lineAlpha={0.18}
+        nodeRadius={1.35}
+        nodeOpacity={0.48}
+        className="z-0"
+      />
+      <SoftParticles disabled={disableBackgroundMotion} />
 
       {/* Bottom fade */}
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-0 h-40 bg-gradient-to-t from-[#020617] via-[#020617]/70 to-transparent" />

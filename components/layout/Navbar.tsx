@@ -8,7 +8,7 @@ import {
   useMotionValue,
   useSpring,
   type Variants,
-} from "framer-motion";
+} from "motion/react";
 import { useAuth } from "../../context/AuthContext";
 
 interface NavbarProps {
