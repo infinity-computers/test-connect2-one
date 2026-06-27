@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import FiberCanvas from "../../../components/ui/FiberCanvas";
 import {
   Shield,
   AlertTriangle,
@@ -22,87 +23,6 @@ import {
   ChevronUp,
   Sparkles,
 } from "lucide-react";
-
-// ─── Fiber Canvas (matching hero) ─────────────────────────────────────────────
-function FiberCanvas({ opacity = 0.3 }: { opacity?: number }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current as HTMLCanvasElement;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
-    if (!ctx) return;
-
-    let animId: number;
-    type Node = { x: number; y: number; vx: number; vy: number };
-    let nodes: Node[] = [];
-    let W = 0,
-      H = 0;
-
-    function resize() {
-      const parent = canvas.parentElement;
-      if (!parent) return;
-      W = canvas.width = parent.offsetWidth;
-      H = canvas.height = parent.offsetHeight;
-      nodes = Array.from({ length: 24 }, () => ({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        vx: (Math.random() - 0.5) * 0.25,
-        vy: (Math.random() - 0.5) * 0.25,
-      }));
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-      nodes.forEach((n) => {
-        n.x += n.vx;
-        n.y += n.vy;
-        if (n.x < 0 || n.x > W) n.vx *= -1;
-        if (n.y < 0 || n.y > H) n.vy *= -1;
-      });
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[i].x - nodes[j].x;
-          const dy = nodes[i].y - nodes[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 150) {
-            const a = (1 - dist / 150) * 0.25;
-            ctx.beginPath();
-            ctx.moveTo(nodes[i].x, nodes[i].y);
-            ctx.lineTo(nodes[j].x, nodes[j].y);
-            ctx.strokeStyle = `rgba(34,211,238,${a})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-          }
-        }
-      }
-      nodes.forEach((n) => {
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, 1.4, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(34,211,238,0.4)";
-        ctx.fill();
-      });
-      animId = requestAnimationFrame(draw);
-    }
-
-    resize();
-    draw();
-    const ro = new ResizeObserver(resize);
-    if (canvas.parentElement) ro.observe(canvas.parentElement);
-    return () => {
-      cancelAnimationFrame(animId);
-      ro.disconnect();
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{ opacity }}
-      className="pointer-events-none absolute inset-0 h-full w-full"
-    />
-  );
-}
 
 // ─── Floating Particles ──────────────────────────────────────────────────────
 const floatingParticles = [
@@ -252,7 +172,7 @@ export default function PolicyClient() {
       }}
     >
       <FloatingParticles />
-      <FiberCanvas opacity={0.3} />
+      <FiberCanvas opacity={0.3} nodeCount={24} connectionDistance={150} speed={0.25} lineAlpha={0.25} nodeRadius={1.4} nodeOpacity={0.4} />
 
       {/* ── Header ── */}
       <div className="relative overflow-hidden border-b border-white/10">
