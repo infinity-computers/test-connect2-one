@@ -10,7 +10,7 @@ import {
   useSpring,
   useTransform,
   type Variants,
-} from "framer-motion";
+} from "motion/react";
 import {
   Zap,
   Star,

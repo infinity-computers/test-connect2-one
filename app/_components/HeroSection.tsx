@@ -6,7 +6,7 @@ import {
   AnimatePresence,
   useReducedMotion,
   type Variants,
-} from "framer-motion";
+} from "motion/react";
 import {
   Wifi,
   ArrowRight,
