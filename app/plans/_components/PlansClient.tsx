@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import {
+  AnimatePresence,
   motion,
   useMotionValue,
   useReducedMotion,
@@ -21,6 +22,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { plans, PlanCategory, Duration } from "../../../data/mockPlans";
+import FiberCanvas from "../../../components/ui/FiberCanvas";
 import { ottPlans } from "../../../data/mockOTT";
 import { useAuth } from "../../../context/AuthContext";
 
@@ -162,87 +164,6 @@ function loadCashfreeSdk(): Promise<void> {
     s.onerror = () => reject(new Error("Failed to load Cashfree checkout"));
     document.body.appendChild(s);
   });
-}
-
-// ─── Fiber canvas ─────────────────────────────────────────────────────────────
-function FiberCanvas({ opacity = 0.45 }: { opacity?: number }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current as HTMLCanvasElement;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
-    if (!ctx) return;
-
-    let animId: number;
-    type Node = { x: number; y: number; vx: number; vy: number };
-    let nodes: Node[] = [];
-    let W = 0,
-      H = 0;
-
-    function resize() {
-      const parent = canvas.parentElement;
-      if (!parent) return;
-      W = canvas.width = parent.offsetWidth;
-      H = canvas.height = parent.offsetHeight;
-      nodes = Array.from({ length: 28 }, () => ({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        vx: (Math.random() - 0.5) * 0.3,
-        vy: (Math.random() - 0.5) * 0.3,
-      }));
-    }
-
-    function draw() {
-      ctx.clearRect(0, 0, W, H);
-      nodes.forEach((n) => {
-        n.x += n.vx;
-        n.y += n.vy;
-        if (n.x < 0 || n.x > W) n.vx *= -1;
-        if (n.y < 0 || n.y > H) n.vy *= -1;
-      });
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[i].x - nodes[j].x;
-          const dy = nodes[i].y - nodes[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 160) {
-            const a = (1 - dist / 160) * 0.3;
-            ctx.beginPath();
-            ctx.moveTo(nodes[i].x, nodes[i].y);
-            ctx.lineTo(nodes[j].x, nodes[j].y);
-            ctx.strokeStyle = `rgba(34,211,238,${a})`;
-            ctx.lineWidth = 0.6;
-            ctx.stroke();
-          }
-        }
-      }
-      nodes.forEach((n) => {
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, 1.6, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(34,211,238,0.5)";
-        ctx.fill();
-      });
-      animId = requestAnimationFrame(draw);
-    }
-
-    resize();
-    draw();
-    const ro = new ResizeObserver(resize);
-    if (canvas.parentElement) ro.observe(canvas.parentElement);
-    return () => {
-      cancelAnimationFrame(animId);
-      ro.disconnect();
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      style={{ opacity }}
-      className="pointer-events-none absolute inset-0 h-full w-full"
-    />
-  );
 }
 
 // ─── Marquee ticker ───────────────────────────────────────────────────────────
@@ -464,7 +385,7 @@ export default function PlansClient() {
           }}
         />
         <div className="absolute left-1/2 top-0 h-px w-[60vw] -translate-x-1/2 bg-gradient-to-r from-transparent via-cyan-300/60 to-transparent" />
-        <FiberCanvas opacity={0.35} />
+        <FiberCanvas opacity={0.35} nodeCount={28} speed={0.3} />
 
         <div className="relative mx-auto max-w-7xl px-4 pt-16 pb-10 sm:px-6 lg:px-8 text-center">
           {/* Badge */}
@@ -726,9 +647,9 @@ export default function PlansClient() {
                             </span>
                           </div>
                           {/* Best for tag */}
-                          <p className="text-[11px] text-slate-500 leading-relaxed border-l-2 border-cyan-400/30 pl-2">
+                          <div className="inline-flex rounded-full border border-cyan-200/10 bg-cyan-300/[0.06] px-3 py-1.5 text-xs font-semibold leading-5 text-slate-300">
                             {getBestFor(plan.speed)}
-                          </p>
+                          </div>
                         </div>
 
                         {/* Price */}
@@ -745,7 +666,7 @@ export default function PlansClient() {
                             for {durationLabels[selectedDuration]}
                           </p>
                           {selectedDuration !== "3m" && (
-                            <p className="text-xs text-emerald-400 font-semibold mt-1">
+                            <p className="text-xs text-cyan-300 font-semibold mt-1">
                               ₹
                               {Math.round(
                                 variant.price / variant.months,
@@ -850,88 +771,102 @@ export default function PlansClient() {
           )}
 
           {/* ── OTT section ── */}
-          <div className="mb-6">
-            <div className="flex items-center gap-3 mb-2">
-              <Tv size={20} className="text-cyan-300" />
-              <h2 className="text-2xl font-bold text-white">
-                OTT + Broadband Add-ons
-              </h2>
-            </div>
-            <p className="text-slate-400 mb-4 text-sm">
-              Enhance your internet plan with premium OTT streaming bundles.
-            </p>
-            <div className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/20 bg-cyan-300/[0.07] px-4 py-2.5 mb-8">
-              <Gift size={14} className="text-cyan-300" />
-              <p className="text-sm text-cyan-200 font-medium">
-                Special Offer: Add Basic OTT with any broadband at just{" "}
-                <strong className="text-cyan-100">₹299/year</strong>
+          <section className="relative mt-16 border-t border-white/[0.08] pt-12">
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/18 to-transparent" />
+            <div className="mb-8">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/[0.07] px-3 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-cyan-100">
+                <Tv size={14} className="text-cyan-300" />
+                Streaming add-ons
+              </div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <h2 className="text-2xl font-bold text-white sm:text-3xl">
+                  OTT + Broadband Add-ons
+                </h2>
+                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-cyan-300/20 bg-cyan-300/[0.07] px-3.5 py-2">
+                  <Gift size={14} className="text-cyan-300" />
+                  <p className="text-xs font-bold text-cyan-200 sm:text-sm">
+                    Basic from <strong className="text-cyan-100">₹299/year</strong>
+                  </p>
+                </div>
+              </div>
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-400">
+                Optional streaming bundles you can add on top of your fiber
+                plan. Broadband plans stay separate from these entertainment
+                add-ons.
               </p>
             </div>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {ottPlans.map((plan, i) => (
-              <motion.div
-                key={plan.id}
-                custom={i}
-                variants={fadeUp}
-                initial="hidden"
-                animate="show"
-                whileHover={shouldReduceMotion ? undefined : { y: -6 }}
-                transition={{ type: "spring", stiffness: 260, damping: 24 }}
-                className="group/ott relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.04] backdrop-blur p-5 flex flex-col min-h-[20rem] transition-colors duration-300 hover:border-cyan-200/25 hover:bg-white/[0.06] hover:shadow-[0_18px_60px_rgba(34,211,238,0.09)]"
-              >
-                <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/0 to-transparent transition group-hover/ott:via-cyan-200/40" />
-                <div className="flex items-center gap-2 mb-1">
-                  <Tv size={13} className="text-cyan-400" />
-                  <h3 className="font-semibold text-white text-sm">
-                    {plan.name}
-                  </h3>
-                </div>
-                {plan.highlight && (
-                  <p className="text-xs text-cyan-300 font-medium mb-3">
-                    {plan.highlight}
-                  </p>
-                )}
-                <div className="flex flex-wrap gap-1 mb-4">
-                  {plan.apps.map((app) => (
-                    <span
-                      key={app}
-                      className="text-xs bg-white/[0.06] text-slate-300 px-2 py-0.5 rounded-full border border-white/[0.06] transition-colors group-hover/ott:border-cyan-200/15 group-hover/ott:text-slate-200"
-                    >
-                      {app}
-                    </span>
-                  ))}
-                </div>
-                <div className="space-y-2 mb-4 flex-1">
-                  {plan.variants.map((v) => (
-                    <div
-                      key={v.label}
-                      className="flex items-center justify-between"
-                    >
-                      <span className="text-slate-500 text-xs">{v.label}</span>
-                      <span className="font-bold text-white text-sm">
-                        ₹{v.price}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-                <button
-                  type="button"
-                  onClick={openOttContactModal}
-                  className="w-full py-2.5 rounded-xl text-sm font-semibold border border-cyan-300/20 text-cyan-300 hover:bg-cyan-300/10 hover:shadow-[0_10px_34px_rgba(34,211,238,0.12)] active:scale-[0.98] transition-all"
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+              {ottPlans.map((plan, i) => (
+                <motion.div
+                  key={plan.id}
+                  custom={i}
+                  variants={fadeUp}
+                  initial="hidden"
+                  animate="show"
+                  whileHover={shouldReduceMotion ? undefined : { y: -5 }}
+                  transition={{ type: "spring", stiffness: 260, damping: 24 }}
+                  className="group/ott relative flex min-h-[20rem] flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.055] p-5 backdrop-blur transition-colors duration-300 hover:border-cyan-200/25 hover:bg-white/[0.075] hover:shadow-[0_18px_60px_rgba(34,211,238,0.08)]"
                 >
-                  Add to Plan
-                </button>
-              </motion.div>
-            ))}
-          </div>
+                  <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/0 to-transparent transition group-hover/ott:via-cyan-200/40" />
+                  <div className="mb-1 flex items-center gap-2">
+                    <Tv size={13} className="text-cyan-400" />
+                    <h3 className="text-sm font-semibold text-white">
+                      {plan.name}
+                    </h3>
+                  </div>
+                  {plan.highlight && (
+                    <p className="mb-3 text-xs font-medium text-cyan-300">
+                      {plan.highlight}
+                    </p>
+                  )}
+                  <div className="mb-4 flex min-h-[3.75rem] flex-wrap content-start gap-1">
+                    {plan.apps.map((app) => (
+                      <span
+                        key={app}
+                        className="rounded-full border border-white/[0.06] bg-white/[0.05] px-2 py-0.5 text-xs text-slate-300 transition-colors group-hover/ott:border-cyan-200/15 group-hover/ott:text-slate-200"
+                      >
+                        {app}
+                      </span>
+                    ))}
+                  </div>
+                  <div className="mb-4 flex-1 space-y-2">
+                    {plan.variants.map((v) => (
+                      <div
+                        key={v.label}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="text-xs text-slate-400">{v.label}</span>
+                        <span className="text-sm font-bold text-white">
+                          ₹{v.price}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={openOttContactModal}
+                    className="w-full rounded-xl border border-cyan-300/20 py-2.5 text-sm font-semibold text-cyan-300 transition-all hover:bg-cyan-300/10 hover:shadow-[0_10px_34px_rgba(34,211,238,0.12)] active:scale-[0.98]"
+                  >
+                    Add to Plan
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          </section>
         </div>
       </div>
 
       {/* ── Connection modal ── */}
-      {showConnectionModal && (
-        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center bg-black/75 px-4 py-5 overflow-y-auto backdrop-blur-sm">
+      <AnimatePresence>
+        {showConnectionModal && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/75 px-4 py-5 backdrop-blur-sm sm:items-center"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+          >
           <motion.div
             initial={{ opacity: 0, scale: 0.97, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -1152,8 +1087,9 @@ export default function PlansClient() {
               </>
             )}
           </motion.div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
