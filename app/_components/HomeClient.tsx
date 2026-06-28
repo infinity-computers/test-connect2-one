@@ -42,6 +42,7 @@ import { plans } from "../../data/mockPlans";
 import { CoverageSection } from "./LocalCoverageSection";
 import HeroSection from "./HeroSection";
 import WhatWeOffer from "./WhatWeOffer";
+import CTABanner from "./Ctabanner";
 
 const trustStats = [
   { label: "Fiber speeds", value: "40-300 Mbps" },
@@ -916,59 +917,7 @@ export default function HomeClient() {
         </div>
       </section>
 
-      <section className="relative bg-[#030913] px-4 py-10 sm:px-6 lg:px-8">
-        <motion.div
-          className="mx-auto max-w-7xl overflow-hidden rounded-[2rem] border border-cyan-200/15 bg-[radial-gradient(circle_at_16%_10%,rgba(34,211,238,0.16),transparent_28%),linear-gradient(135deg,rgba(255,255,255,0.075),rgba(255,255,255,0.024))] p-5 shadow-2xl shadow-cyan-950/20 backdrop-blur-xl sm:p-6 lg:p-7"
-          initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
-          whileInView={shouldReduceMotion ? undefined : { opacity: 1, y: 0 }}
-          viewport={{ once: true, amount: 0.35 }}
-          transition={{ duration: 0.55, ease: "easeOut" }}
-        >
-          <div className="grid gap-5 lg:grid-cols-[1fr_auto] lg:items-center">
-            <div className="flex gap-4">
-              <div className="hidden h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-cyan-200/20 bg-cyan-300/10 text-cyan-100 sm:flex">
-                <Headphones size={25} />
-              </div>
-              <div>
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1.5 text-xs font-black uppercase tracking-[0.14em] text-emerald-100">
-                  <CircleDot size={12} className="fill-emerald-200/40" />
-                  Local support available
-                </div>
-                <h2 className="text-2xl font-black tracking-[-0.035em] text-white sm:text-3xl">
-                  Need help choosing a plan?
-                </h2>
-                <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-350 sm:text-base">
-                  Talk to our local team before booking your connection.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 sm:flex-row lg:justify-end">
-              <a
-                href="tel:9974955542"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl bg-cyan-300 px-5 py-3 text-sm font-black text-slate-950 shadow-[0_16px_48px_rgba(34,211,238,0.24)] transition hover:-translate-y-0.5 hover:bg-cyan-200"
-              >
-                <Phone size={16} /> Call Now
-              </a>
-              <a
-                href="https://wa.me/919974955542"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.055] px-5 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:border-cyan-200/35 hover:bg-white/[0.085]"
-              >
-                <MessageCircle size={16} /> WhatsApp
-              </a>
-              <button
-                type="button"
-                onClick={() => onNavigate("/plans")}
-                className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-slate-950/35 px-5 py-3 text-sm font-bold text-white transition hover:-translate-y-0.5 hover:border-cyan-200/35 hover:bg-white/[0.07]"
-              >
-                View Plans <ArrowRight size={16} />
-              </button>
-            </div>
-          </div>
-        </motion.div>
-      </section>
+      <CTABanner />
 
       {/* {!user && (
         <section className="relative overflow-hidden bg-[#050d18] py-16 text-white sm:py-20">
