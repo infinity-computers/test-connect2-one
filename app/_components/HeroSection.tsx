@@ -7,14 +7,7 @@ import {
   useReducedMotion,
   type Variants,
 } from "motion/react";
-import {
-  Wifi,
-  ArrowRight,
-  Zap,
-  Shield,
-  Headphones,
-  Sparkles,
-} from "lucide-react";
+import { Wifi, ArrowRight, Zap, Shield, Headphones } from "lucide-react";
 import FiberCanvas from "../../components/ui/FiberCanvas";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -24,10 +17,10 @@ interface HeroSectionProps {
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 const trustStats = [
-  { value: "40–300", label: "Mbps Fiber" },
-  { value: "3.5 TB", label: "Monthly FUP" },
-  { value: "2 Mbps", label: "Post-FUP" },
-  { value: "Local", label: "Support Team" },
+  { value: "40–300", unit: "Mbps", label: "Fiber speeds" },
+  { value: "3.5", unit: "TB", label: "Monthly FUP" },
+  { value: "2", unit: "Mbps", label: "Post-FUP floor" },
+  { value: "Same", unit: "day", label: "Local support" },
 ];
 
 const rotatingWords = [
@@ -39,11 +32,12 @@ const rotatingWords = [
 ];
 
 const features = [
-  { icon: Zap, text: "Fast fiber plans" },
-  { icon: Shield, text: "Transparent pricing" },
-  { icon: Headphones, text: "Local support" },
+  { icon: Zap, text: "Up to 300 Mbps" },
+  { icon: Shield, text: "No hidden charges" },
+  { icon: Headphones, text: "Call us, not a bot" },
 ];
 
+// ─── Hooks ───────────────────────────────────────────────────────────────────
 function useIsLowEndDevice() {
   const [isLowEnd, setIsLowEnd] = useState(false);
 
@@ -120,6 +114,12 @@ function SoftParticles({ disabled }: { disabled: boolean }) {
 }
 
 // ─── Rotating Text ───────────────────────────────────────────────────────────
+// The container is inline-block with a fixed width so layout doesn't shift.
+// vertical-align: baseline (default for inline-block) ensures the word sits
+// on exactly the same baseline as "built for". The inner absolute span is
+// positioned relative to the container's own line box — no padding hacks,
+// no overflow clipping. The dot is inside the gradient span so it never
+// gets orphaned and never gets clipped.
 function RotatingText() {
   const shouldReduceMotion = useReducedMotion();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -136,7 +136,7 @@ function RotatingText() {
 
   return (
     <span
-      className="relative inline-flex h-[1.12em] min-w-[8.2ch] items-center justify-center overflow-hidden align-bottom"
+      className="relative inline-block min-w-[9ch] text-left"
       aria-hidden="true"
     >
       <AnimatePresence mode="wait" initial={false}>
@@ -157,15 +157,10 @@ function RotatingText() {
             duration: shouldReduceMotion ? 0 : 0.48,
             ease: [0.22, 1, 0.36, 1],
           }}
-          className="absolute inline-flex items-baseline justify-center"
+          className="relative bg-gradient-to-r from-cyan-200 via-sky-300 to-blue-300 bg-clip-text px-1 text-transparent"
         >
-          <span className="relative bg-gradient-to-r from-cyan-200 via-sky-300 to-blue-300 bg-clip-text px-1 text-transparent">
-            {rotatingWords[currentIndex]}
-
-            <span className="absolute inset-x-1 -bottom-[0.03em] h-[0.18em] rounded-full bg-cyan-300/10 blur-md" />
-          </span>
-
-          <span className="ml-2 text-white">.</span>
+          {rotatingWords[currentIndex]}.
+          <span className="absolute inset-x-1 -bottom-[0.03em] h-[0.18em] rounded-full bg-cyan-300/10 blur-md" />
         </motion.span>
       </AnimatePresence>
     </span>
@@ -191,14 +186,7 @@ function FeaturePills() {
               duration: 0.45,
               ease: [0.22, 1, 0.36, 1],
             }}
-            whileHover={
-              shouldReduceMotion
-                ? undefined
-                : {
-                    y: -3,
-                    scale: 1.03,
-                  }
-            }
+            whileHover={shouldReduceMotion ? undefined : { y: -3, scale: 1.03 }}
             className="group flex items-center gap-2 rounded-full border border-white/[0.08] bg-white/[0.045] px-4 py-2 backdrop-blur transition hover:border-cyan-200/25 hover:bg-white/[0.07]"
           >
             <Icon
@@ -211,6 +199,48 @@ function FeaturePills() {
           </motion.div>
         );
       })}
+    </div>
+  );
+}
+
+// ─── Trust Stats ─────────────────────────────────────────────────────────────
+// Divider lines replaced with mid-dot separators — they float above the grid
+// visually without merging into it, and scale down cleanly on mobile.
+function TrustStats() {
+  const shouldReduceMotion = useReducedMotion();
+
+  return (
+    <div className="flex flex-wrap items-center justify-center">
+      {trustStats.map((stat, index) => (
+        <motion.div
+          key={stat.label}
+          initial={shouldReduceMotion ? false : { opacity: 0, y: 14 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{
+            delay: shouldReduceMotion ? 0 : 0.5 + index * 0.08,
+            duration: 0.45,
+            ease: [0.22, 1, 0.36, 1],
+          }}
+          className="group flex items-center"
+        >
+          <div className="flex flex-col items-center px-6 py-2">
+            <p className="text-2xl font-black tracking-tight text-white transition group-hover:text-cyan-200">
+              {stat.value}
+              <span className="ml-0.5 text-sm font-bold text-slate-400 transition group-hover:text-cyan-300/70">
+                {stat.unit}
+              </span>
+            </p>
+            <p className="mt-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500">
+              {stat.label}
+            </p>
+          </div>
+          {index < trustStats.length - 1 && (
+            <span className="text-slate-600 select-none" aria-hidden="true">
+              ·
+            </span>
+          )}
+        </motion.div>
+      ))}
     </div>
   );
 }
@@ -246,10 +276,7 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
   };
 
   const scaleIn: Variants = {
-    hidden: {
-      opacity: 0,
-      scale: shouldReduceMotion ? 1 : 0.96,
-    },
+    hidden: { opacity: 0, scale: shouldReduceMotion ? 1 : 0.96 },
     show: {
       opacity: 1,
       scale: 1,
@@ -263,7 +290,7 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
   return (
     <section
       className="relative min-h-[calc(100svh-4rem)] overflow-hidden border-b border-white/10 bg-[#020617]"
-      aria-label="Hero section with fiber internet plans"
+      aria-label="Hero section — Connect One Networks fiber internet"
     >
       {/* Base */}
       <div className="absolute inset-0 z-0 bg-[#020617]" />
@@ -316,18 +343,19 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-cyan-300 shadow-[0_0_8px_3px_rgba(34,211,238,0.42)]" />
               </span>
               <Wifi size={14} aria-hidden="true" />
-              Bharuch Fiber ISP
+              Connect One Networks · Bharuch
             </div>
           </motion.div>
 
           {/* Heading */}
           <motion.h1
             variants={fadeUp}
-            aria-label="Fiber internet built for streaming, gaming, working, learning, and creating."
+            aria-label="Bharuch's own fiber network. Built for streaming, gaming, working, and more."
             className="max-w-5xl text-4xl font-black leading-[1.02] tracking-[-0.045em] text-white sm:text-5xl md:text-6xl lg:text-7xl"
           >
-            Fiber internet built for <br className="hidden sm:block" />
-            <RotatingText />
+            Fast, honest internet
+            <br />
+            that actually works.
           </motion.h1>
 
           {/* Description */}
@@ -335,9 +363,8 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
             variants={fadeUp}
             className="mt-6 max-w-2xl text-base leading-7 text-slate-300/90 sm:text-lg md:text-xl md:leading-8"
           >
-            Premium broadband plans for Bharuch homes and businesses with clear
-            pricing, generous FUP, local support, and a smooth connection
-            experience.
+            No hidden charges. No throttling surprises. Just solid fiber from a
+            team you can actually call — right here in Bharuch.
           </motion.p>
 
           {/* Feature Pills */}
@@ -364,11 +391,10 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
               <span className="absolute inset-0 translate-x-[-110%] bg-gradient-to-r from-transparent via-white/35 to-transparent transition duration-700 group-hover:translate-x-[110%]" />
 
               <span className="relative z-10 flex items-center gap-2">
-                <span>View Plans</span>
+                <span>See Plans</span>
                 <span className="hidden text-xs font-black opacity-65 sm:inline">
                   40–300 Mbps
                 </span>
-
                 <motion.span
                   animate={{
                     x: isPrimaryHovering && !shouldReduceMotion ? 5 : 0,
@@ -389,46 +415,13 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
               whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}
               className="group inline-flex items-center justify-center gap-2 rounded-2xl border border-white/12 bg-white/[0.06] px-8 py-4 text-sm font-bold text-white backdrop-blur transition hover:border-cyan-200/40 hover:bg-white/[0.09] hover:shadow-[0_18px_60px_rgba(15,23,42,0.35)]"
             >
-              Book New Connection
+              Book a Connection
             </motion.button>
           </motion.div>
 
-          {/* Trust Stats */}
-          <motion.div
-            variants={scaleIn}
-            className="mt-12 grid w-full max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4"
-          >
-            {trustStats.map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{
-                  delay: shouldReduceMotion ? 0 : 0.5 + index * 0.08,
-                  duration: 0.45,
-                  ease: [0.22, 1, 0.36, 1],
-                }}
-                whileHover={
-                  shouldReduceMotion
-                    ? undefined
-                    : {
-                        y: -5,
-                        scale: 1.025,
-                      }
-                }
-                className="group relative overflow-hidden rounded-2xl border border-white/[0.07] bg-white/[0.045] p-4 backdrop-blur transition hover:border-cyan-300/25 hover:bg-white/[0.07]"
-              >
-                <div className="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-cyan-200/35 to-transparent opacity-0 transition group-hover:opacity-100" />
-
-                <p className="text-2xl font-black text-white transition group-hover:text-cyan-200">
-                  {stat.value}
-                </p>
-
-                <p className="mt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400">
-                  {stat.label}
-                </p>
-              </motion.div>
-            ))}
+          {/* Trust Stats — clean divider row, no cards */}
+          <motion.div variants={scaleIn} className="mt-14">
+            <TrustStats />
           </motion.div>
         </motion.div>
       </div>
