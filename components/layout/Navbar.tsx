@@ -125,7 +125,7 @@ export default function Navbar({ currentPath, onNavigate }: NavbarProps) {
       style={{ borderRadius }}
     >
       <div className="mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between gap-4">
+        <div className="flex h-[62px] items-center justify-between gap-4">
           {/* Logo */}
           <button
             onClick={() => handleNavigate("/")}
