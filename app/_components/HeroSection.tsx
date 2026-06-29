@@ -408,7 +408,7 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
 
             <motion.button
               type="button"
-              onClick={() => onNavigate("/new-connection")}
+              onClick={() => onNavigate("/plans")}
               whileHover={
                 shouldReduceMotion ? undefined : { y: -3, scale: 1.015 }
               }
