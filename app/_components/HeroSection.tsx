@@ -366,8 +366,8 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
             variants={fadeUp}
             className="mt-6 max-w-2xl text-base leading-7 text-slate-200/85 sm:text-lg md:text-xl md:leading-8"
           >
-            No hidden charges. Clear FUP terms. Just solid fiber from a
-            team you can actually call — right here in Bharuch.
+            No hidden charges. Clear FUP terms. Just solid fiber from a team you
+            can actually call — right here in Bharuch.
           </motion.p>
 
           {/* Feature Pills */}
@@ -407,7 +407,7 @@ export default function HeroSection({ onNavigate }: HeroSectionProps) {
 
             <motion.button
               type="button"
-              onClick={() => onNavigate("/new-connection")}
+              onClick={() => onNavigate("/plans")}
               whileHover={shouldReduceMotion ? undefined : { y: -1 }}
               whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}
               className="group inline-flex items-center justify-center gap-2 rounded-2xl border border-white/[0.1] bg-white/[0.035] px-8 py-4 text-sm font-bold text-slate-200 backdrop-blur-sm transition duration-300 hover:border-cyan-200/25 hover:bg-cyan-300/[0.045] hover:text-white hover:shadow-[0_12px_36px_rgba(15,23,42,0.24)]"
