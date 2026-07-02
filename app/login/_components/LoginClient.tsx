@@ -173,7 +173,7 @@ export default function LoginClient() {
   };
 
   return (
-    <div className="pt-16 min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 flex items-center justify-center px-4 py-12">
+    <div className="pt-14 min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <img src="/LOGO_(1).png" alt="Connect One Networks" className="h-12 w-auto mx-auto mb-4" />

@@ -281,7 +281,7 @@ export default function AdminNewConnectionsClient() {
 
   if (!user || (user.role !== "ADMIN" && user.role !== "TECHNICIAN")) {
     return (
-      <div className="pt-16 min-h-screen bg-slate-950 flex items-center justify-center px-4">
+      <div className="pt-14 min-h-screen bg-slate-950 flex items-center justify-center px-4">
         <div className="text-center">
           <p className="text-slate-300 mb-4">Admin access required.</p>
           <button onClick={() => onNavigate("/login")} className="btn-primary px-5 py-2.5">Sign In</button>
@@ -292,14 +292,14 @@ export default function AdminNewConnectionsClient() {
 
   if (loading) {
     return (
-      <div className="pt-16 min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="pt-14 min-h-screen bg-slate-950 flex items-center justify-center">
         <Loader2 size={32} className="animate-spin text-blue-400" />
       </div>
     );
   }
 
   return (
-    <div className="pt-16 min-h-screen bg-slate-950">
+    <div className="pt-14 min-h-screen bg-slate-950">
       <div className="bg-gradient-to-br from-slate-950 to-slate-900 text-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <button onClick={() => onNavigate("/admin/dashboard")} className="flex items-center gap-1.5 text-slate-400 hover:text-white text-sm mb-3 transition-colors">

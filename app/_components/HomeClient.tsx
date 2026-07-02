@@ -459,7 +459,7 @@ export default function HomeClient() {
   );
 
   return (
-    <div className="min-h-screen overflow-hidden bg-[#030913] pt-16 text-white">
+    <div className="min-h-screen overflow-hidden bg-[#030913] pt-14 text-white">
       <HeroSection onNavigate={onNavigate} />
 
       {/* <section className="relative overflow-hidden bg-[#050d18] py-16 sm:py-20">

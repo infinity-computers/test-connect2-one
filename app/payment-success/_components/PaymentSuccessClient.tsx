@@ -90,7 +90,7 @@ export default function PaymentSuccessClient({ queryParams = {} }: PaymentSucces
     const paid = isPaidStatus(newConnectionStatus?.status);
 
     return (
-      <div className="pt-16 min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 flex items-center justify-center px-4 py-12">
+      <div className="pt-14 min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
           {!hasValidReference ? (
             <div className="bg-slate-900 rounded-3xl shadow-xl border border-slate-800 p-10 text-center">
@@ -174,7 +174,7 @@ export default function PaymentSuccessClient({ queryParams = {} }: PaymentSucces
   const isValid = paymentId && orderId && subscriptionId;
 
   return (
-    <div className="pt-16 min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 flex items-center justify-center px-4 py-12">
+    <div className="pt-14 min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         {!isValid ? (
           <div className="bg-slate-900 rounded-3xl shadow-xl border border-slate-800 p-10 text-center">

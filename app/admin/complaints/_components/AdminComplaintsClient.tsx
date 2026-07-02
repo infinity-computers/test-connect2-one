@@ -105,7 +105,7 @@ export default function AdminComplaintsClient() {
 
   if (!user || (user.role !== 'ADMIN' && user.role !== 'TECHNICIAN')) {
     return (
-      <div className="pt-16 min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="pt-14 min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center px-4">
           <p className="text-slate-300 mb-4">Staff access required.</p>
           <button onClick={() => navigate('/login')} className="btn-primary px-5 py-2.5">Login</button>
@@ -116,7 +116,7 @@ export default function AdminComplaintsClient() {
 
   if (loading) {
     return (
-      <div className="pt-16 min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="pt-14 min-h-screen bg-slate-950 flex items-center justify-center">
         <Loader2 size={32} className="animate-spin text-blue-400" />
       </div>
     );
@@ -347,7 +347,7 @@ const progressStages: ComplaintStatus[] = ['PENDING_APPROVAL', 'OPEN', 'IN_PROGR
   ];
 
   return (
-    <div className="pt-16 min-h-screen bg-slate-950">
+    <div className="pt-14 min-h-screen bg-slate-950">
       <div className="bg-gradient-to-br from-slate-950 to-slate-900 text-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">

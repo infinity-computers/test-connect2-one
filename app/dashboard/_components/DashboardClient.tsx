@@ -116,7 +116,7 @@ export default function DashboardClient() {
 
   if (!user || user.role !== 'USER') {
     return (
-      <div className="pt-16 min-h-screen bg-slate-950 flex items-center justify-center px-4">
+      <div className="pt-14 min-h-screen bg-slate-950 flex items-center justify-center px-4">
         <div className="text-center">
           <p className="text-slate-300 mb-4">Please sign in to access your dashboard.</p>
           <button onClick={() => onNavigate('/login')} className="btn-primary px-5 py-2.5">Sign In</button>
@@ -180,14 +180,14 @@ export default function DashboardClient() {
 
   if (loading) {
     return (
-      <div className="pt-16 min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="pt-14 min-h-screen bg-slate-950 flex items-center justify-center">
         <Loader2 size={32} className="animate-spin text-blue-400" />
       </div>
     );
   }
 
   return (
-    <div className="pt-16 min-h-screen bg-slate-950">
+    <div className="pt-14 min-h-screen bg-slate-950">
       {/* Header */}
       <div className="bg-gradient-to-br from-blue-900 to-blue-700 text-white py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
