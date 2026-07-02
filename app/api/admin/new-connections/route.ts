@@ -7,7 +7,7 @@ import {
 } from "../../../../generated/prisma/enums";
 import { prisma } from "../../../../lib/prisma";
 import { getCurrentUser } from "../../../../lib/auth-token";
-import { sendPlainEmail } from "../../../../lib/email";
+import { sendEmail } from "../../../../lib/email";
 
 export const runtime = "nodejs";
 
@@ -166,7 +166,7 @@ async function sendKycUploadLinkEmail({
   const uploadUrl = `${getAppBaseUrl(req)}/document-uploads/${token}`;
   const requiredDocumentsText = requiredDocuments.map(formatDocumentName).join(", ");
 
-  await sendPlainEmail({
+  await sendEmail({
     to: customerEmail,
     subject: "Upload KYC documents for your Connect One connection",
     text: [

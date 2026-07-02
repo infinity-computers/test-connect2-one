@@ -273,7 +273,7 @@ export default function AdminDashboardClient() {
 
   if (!user || (user.role !== "ADMIN" && user.role !== "TECHNICIAN")) {
     return (
-      <div className="pt-16 min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="pt-14 min-h-screen bg-slate-950 flex items-center justify-center">
         <div className="text-center px-4">
           <p className="text-slate-300 mb-4">Admin access required.</p>
           <button
@@ -289,14 +289,14 @@ export default function AdminDashboardClient() {
 
   if (loading) {
     return (
-      <div className="pt-16 min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="pt-14 min-h-screen bg-slate-950 flex items-center justify-center">
         <Loader2 size={32} className="animate-spin text-blue-400" />
       </div>
     );
   }
 
   return (
-    <div className="pt-16 min-h-screen bg-slate-950">
+    <div className="pt-14 min-h-screen bg-slate-950">
       {/* Admin Header */}
       <div className="bg-gradient-to-br from-slate-950 to-slate-900 text-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

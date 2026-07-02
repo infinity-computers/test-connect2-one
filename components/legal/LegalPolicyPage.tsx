@@ -14,7 +14,7 @@ const lastUpdated = "June 12, 2026";
 
 export default function LegalPolicyPage({ eyebrow, title, description, sections }: LegalPolicyPageProps) {
   return (
-    <div className="pt-16 bg-slate-950 min-h-screen">
+    <div className="pt-14 bg-slate-950 min-h-screen">
       <div className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-900 text-white py-14">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="inline-flex items-center rounded-full border border-cyan-500/30 bg-cyan-950/40 px-3 py-1 text-xs font-medium text-cyan-200 mb-4">

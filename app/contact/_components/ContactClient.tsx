@@ -286,7 +286,7 @@ export default function ContactClient() {
 
   return (
     <div
-      className="min-h-screen pt-16 relative"
+      className="min-h-screen pt-14 relative"
       style={{
         background:
           "linear-gradient(135deg,#030913 0%,#071527 48%,#020617 100%)",

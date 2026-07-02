@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 import { prisma } from "../../../lib/prisma";
 import { getCurrentUser } from "../../../lib/auth-token";
 import { ensureTicketReminderScheduler } from "../../../lib/ticket-reminder";
 import { ticket_issue_type } from "../../../generated/prisma/enums";
+import { sendEmail } from "../../../lib/email";
 
 export const runtime = "nodejs";
 
@@ -40,14 +40,6 @@ async function createUniqueTrackingCode(): Promise<string> {
   }
 }
 
-function createSendmailTransport() {
-  return nodemailer.createTransport({
-    sendmail: true,
-    newline: "unix",
-    path: "/usr/sbin/sendmail",
-  });
-}
-
 async function sendComplaintEmails(options: {
   complaintId: string;
   trackingCode: string;
@@ -62,9 +54,6 @@ async function sendComplaintEmails(options: {
   pinCode?: string | null;
   adminEmails: string[];
 }) {
-  const transporter = createSendmailTransport();
-  const from = "no-reply@connect2one.in";
-
   const customerText = [
     "Hi,",
     "",
@@ -101,14 +90,12 @@ async function sendComplaintEmails(options: {
     .join("\n");
 
   await Promise.all([
-    transporter.sendMail({
-      from,
+    sendEmail({
       to: options.customerEmail,
       subject: `Ticket Received - ${options.complaintId}`,
       text: customerText,
     }),
-    transporter.sendMail({
-      from,
+    sendEmail({
       to: options.adminEmails[0] || options.customerEmail,
       bcc: options.adminEmails.slice(1),
       subject: `New Ticket - ${options.complaintId}`,

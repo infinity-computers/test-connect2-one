@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "../../../../lib/prisma";
 import { verifyCashfreeWebhookSignature } from "../../../../lib/cashfree";
-import { sendPlainEmail } from "../../../../lib/email";
+import { sendEmail } from "../../../../lib/email";
 import { createUniqueTicketTrackingCode } from "../../../../lib/tracking-code";
 
 export const runtime = "nodejs";
@@ -129,7 +129,7 @@ async function sendNewConnectionEmails(requestId: string) {
   const planText = `${request.plan_variants.plans.name} ${request.plan_variants.speed_mbps} Mbps for ${request.plan_variants.duration_months} months`;
 
   if (!request.customer_notified_at) {
-    await sendPlainEmail({
+      await sendEmail({
       to: request.customer_email,
       subject: `Payment received - New connection request ${trackingCode}`,
       text: [
@@ -155,7 +155,7 @@ async function sendNewConnectionEmails(requestId: string) {
   }
 
   if (!request.admin_notified_at && adminEmails.length > 0) {
-    await sendPlainEmail({
+    await sendEmail({
       to: adminEmails[0],
       bcc: adminEmails.slice(1),
       subject: `New paid connection request - ${trackingCode}`,

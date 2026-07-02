@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 import bcrypt from "bcryptjs";
 import { prisma } from "../../../../lib/prisma";
+import { sendEmail } from "../../../../lib/email";
 
 export const runtime = "nodejs";
 
@@ -20,32 +20,6 @@ function generateOtp(): string {
 
 function getRequestIp(req: NextRequest): string | null {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
-}
-
-async function sendOtpEmail(email: string, otp: string) {
-  const host = process.env.SMTP_HOST;
-  const port = Number(process.env.SMTP_PORT || "587");
-  const user = process.env.SMTP_USER;
-  const pass = process.env.SMTP_PASS;
-  const from = process.env.SMTP_FROM || user;
-
-  if (!host || !user || !pass || !from) {
-    throw new Error("SMTP configuration is missing");
-  }
-
-  const transporter = nodemailer.createTransport({
-    host,
-    port,
-    secure: port === 465,
-    auth: { user, pass },
-  });
-
-  await transporter.sendMail({
-    from,
-    to: email,
-    subject: "Your Connect One login OTP",
-    text: `Your OTP is ${otp}. It expires in ${OTP_EXPIRY_MINUTES} minutes.`,
-  });
 }
 
 export async function POST(req: NextRequest) {
@@ -120,7 +94,11 @@ export async function POST(req: NextRequest) {
       select: { id: true },
     });
 
-    await sendOtpEmail(targetEmail, otp);
+    await sendEmail({
+      to: targetEmail,
+      subject: "Your Connect One login OTP",
+      text: `Your OTP is ${otp}. It expires in ${OTP_EXPIRY_MINUTES} minutes.`,
+    });
 
     return NextResponse.json({
       ok: true,

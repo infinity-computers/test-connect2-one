@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 import bcrypt from "bcryptjs";
 import { prisma } from "../../../../../../lib/prisma";
 import { getCurrentUser } from "../../../../../../lib/auth-token";
+import { sendEmail } from "../../../../../../lib/email";
 
 export const runtime = "nodejs";
 
@@ -14,67 +14,6 @@ function generateOtp(): string {
 
 function getRequestIp(req: NextRequest): string | null {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
-}
-
-async function sendOtpEmail(email: string, otp: string) {
-  const transporter = nodemailer.createTransport({
-    sendmail: true,
-    newline: "unix",
-    path: "/usr/sbin/sendmail",
-  });
-
-  await transporter.sendMail({
-    from: "no-reply@connect2one.in",
-    to: email,
-    subject: "Ticket resolution OTP",
-    text: `Your OTP is ${otp}. It expires in ${OTP_EXPIRY_MINUTES} minutes.`,
-  });
-
-  // Previous SMTP-based sender kept for reference.
-  // const host = process.env.SMTP_HOST;
-  // const port = Number(process.env.SMTP_PORT || "587");
-  // const user = process.env.SMTP_USER;
-  // const pass = process.env.SMTP_PASS;
-  // const from = process.env.SMTP_FROM || user;
-  // if (!host || !user || !pass || !from) {
-  //   throw new Error("SMTP configuration is missing");
-  // }
-  // const smtpTransporter = nodemailer.createTransport({
-  //   host,
-  //   port,
-  //   secure: port === 465,
-  //   auth: { user, pass },
-  // });
-  // await smtpTransporter.sendMail({
-  //   from,
-  //   to: email,
-  //   subject: "Ticket resolution OTP",
-  //   text: `Your OTP is ${otp}. It expires in ${OTP_EXPIRY_MINUTES} minutes.`,
-  // });
-}
-
-async function sendTrackingEmail(email: string, trackingCode: string) {
-  const transporter = nodemailer.createTransport({
-    sendmail: true,
-    newline: "unix",
-    path: "/usr/sbin/sendmail",
-  });
-
-  await transporter.sendMail({
-    from: "no-reply@connect2one.in",
-    to: email,
-    subject: `Ticket Tracking Code - ${trackingCode}`,
-    text: [
-      "Hi,",
-      "",
-      "Your ticket is being processed.",
-      `Tracking Code: ${trackingCode}`,
-      "Use this code to track your ticket.",
-      "",
-      "Regards,",
-      "Connect One Networks",
-    ].join("\n"),
-  });
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -135,8 +74,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     });
 
     await Promise.all([
-      sendOtpEmail(targetEmail, otp),
-      sendTrackingEmail(targetEmail, ticket.tracking_code),
+      sendEmail({
+        to: targetEmail,
+        subject: "Ticket resolution OTP",
+        text: `Your OTP is ${otp}. It expires in ${OTP_EXPIRY_MINUTES} minutes.`,
+      }),
+      sendEmail({
+        to: targetEmail,
+        subject: `Ticket Tracking Code - ${ticket.tracking_code}`,
+        text: [
+          "Hi,",
+          "",
+          "Your ticket is being processed.",
+          `Tracking Code: ${ticket.tracking_code}`,
+          "Use this code to track your ticket.",
+          "",
+          "Regards,",
+          "Connect One Networks",
+        ].join("\n"),
+      }),
     ]);
 
     return NextResponse.json({ ok: true, challengeId: challenge.id });

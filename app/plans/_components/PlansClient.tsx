@@ -369,7 +369,7 @@ export default function PlansClient() {
 
   return (
     <div
-      className="min-h-screen pt-16"
+      className="min-h-screen pt-14"
       style={{
         background:
           "linear-gradient(135deg,#030913 0%,#071527 48%,#020617 100%)",
