@@ -3,7 +3,7 @@ import { prisma } from "../../../../lib/prisma";
 import { getCurrentUser } from "../../../../lib/auth-token";
 import bcrypt from "bcryptjs";
 import { ROLE, users_auth_type } from "../../../../generated/prisma/enums";
-import { sendPlainEmail } from "../../../../lib/email";
+import { sendEmail } from "../../../../lib/email";
 
 export const runtime = "nodejs";
 
@@ -101,7 +101,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (newUser.role === "USER" && newUser.phone) {
-      await sendPlainEmail({
+      await sendEmail({
         to: email,
         subject: "Your Connect One Networks account is ready",
         text: [

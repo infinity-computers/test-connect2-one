@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "../../../../../../lib/auth-token";
-import { sendPlainEmail } from "../../../../../../lib/email";
+import { sendEmail } from "../../../../../../lib/email";
 import { prisma } from "../../../../../../lib/prisma";
 
 export const runtime = "nodejs";
@@ -105,7 +105,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const planText = `${connectionRequest.plan_variants.plans.name} ${connectionRequest.plan_variants.speed_mbps} Mbps for ${connectionRequest.plan_variants.duration_months} months`;
     const requiredDocumentsText = uploadRequest.required_documents.map(formatDocumentName).join(", ");
 
-    await sendPlainEmail({
+    await sendEmail({
       to: connectionRequest.customer_email,
       subject: "Upload KYC documents for your Connect One connection",
       text: [
