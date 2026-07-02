@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import nodemailer from "nodemailer";
 import bcrypt from "bcryptjs";
 import { prisma } from "../../../../lib/prisma";
+import { sendEmail } from "../../../../lib/email";
 
 export const runtime = "nodejs";
 
@@ -20,21 +20,6 @@ function generateOtp(): string {
 
 function getRequestIp(req: NextRequest): string | null {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
-}
-
-async function sendOtpEmail(email: string, otp: string) {
-  const transporter = nodemailer.createTransport({
-    sendmail: true,
-    newline: "unix",
-    path: "/usr/sbin/sendmail",
-  });
-
-  await transporter.sendMail({
-    from: "no-reply@connect2one.in",
-    to: email,
-    subject: "Your Connect One login OTP",
-    text: `Your OTP is ${otp}. It expires in ${OTP_EXPIRY_MINUTES} minutes.`,
-  });
 }
 
 export async function POST(req: NextRequest) {
@@ -99,7 +84,11 @@ export async function POST(req: NextRequest) {
       select: { id: true },
     });
 
-    await sendOtpEmail(email, otp);
+    await sendEmail({
+      to: email,
+      subject: "Your Connect One login OTP",
+      text: `Your OTP is ${otp}. It expires in ${OTP_EXPIRY_MINUTES} minutes.`,
+    });
 
     return NextResponse.json({
       ok: true,
