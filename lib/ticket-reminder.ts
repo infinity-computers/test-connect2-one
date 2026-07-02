@@ -1,5 +1,5 @@
-import nodemailer from "nodemailer";
 import { prisma } from "./prisma";
+import { sendEmail } from "./email";
 
 const CHECK_EVERY_MS = 5 * 60 * 1000;
 const REMINDER_GAP_MS = 60 * 60 * 1000;
@@ -10,50 +10,9 @@ type ReminderGlobal = {
 
 const reminderGlobal = globalThis as typeof globalThis & ReminderGlobal;
 
-function createTransport() {
-  return nodemailer.createTransport({
-    sendmail: true,
-    newline: "unix",
-    path: "/usr/sbin/sendmail",
-  });
-}
-
 function isDue(lastSentAt: Date | null, now: Date): boolean {
   if (!lastSentAt) return true;
   return now.getTime() - new Date(lastSentAt).getTime() >= REMINDER_GAP_MS;
-}
-
-async function sendReminderEmail(to: string, payload: {
-  complaintId: string;
-  trackingCode: string;
-  issueType: string;
-  assignedAt: Date | null;
-}) {
-  const transporter = createTransport();
-  const assignedAtText = payload.assignedAt
-    ? payload.assignedAt.toLocaleString("en-IN")
-    : "Not available";
-
-  await transporter.sendMail({
-    from: "no-reply@connect2one.in",
-    to,
-    subject: `Reminder: Ticket ${payload.trackingCode} is still in progress`,
-    text: [
-      "Hi,",
-      "",
-      "This is an hourly reminder for a ticket currently assigned to you.",
-      `Ticket ID: ${payload.complaintId}`,
-      `Tracking Code: ${payload.trackingCode}`,
-      `Issue Type: ${payload.issueType}`,
-      `Assigned At: ${assignedAtText}`,
-      "Status: IN_PROGRESS",
-      "",
-      "Please continue updates until it is resolved.",
-      "",
-      "Regards,",
-      "Connect One Networks",
-    ].join("\n"),
-  });
 }
 
 async function runReminderSweep() {
@@ -90,11 +49,28 @@ async function runReminderSweep() {
     }
 
     try {
-      await sendReminderEmail(technicianEmail, {
-        complaintId: ticket.id,
-        trackingCode: ticket.tracking_code,
-        issueType: ticket.issue_type,
-        assignedAt: ticket.assigned_at,
+      const assignedAtText = ticket.assigned_at
+        ? ticket.assigned_at.toLocaleString("en-IN")
+        : "Not available";
+
+      await sendEmail({
+        to: technicianEmail,
+        subject: `Reminder: Ticket ${ticket.tracking_code} is still in progress`,
+        text: [
+          "Hi,",
+          "",
+          "This is an hourly reminder for a ticket currently assigned to you.",
+          `Ticket ID: ${ticket.id}`,
+          `Tracking Code: ${ticket.tracking_code}`,
+          `Issue Type: ${ticket.issue_type}`,
+          `Assigned At: ${assignedAtText}`,
+          "Status: IN_PROGRESS",
+          "",
+          "Please continue updates until it is resolved.",
+          "",
+          "Regards,",
+          "Connect One Networks",
+        ].join("\n"),
       });
 
       await prisma.tickets.update({
